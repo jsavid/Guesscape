@@ -66,16 +66,45 @@ const flashOverlay = document.getElementById('flash-overlay');
 
 const TOTAL_QUESTIONS = 20;
 
+function updateUIStrings() {
+    const scoreLabel = document.getElementById('score-label');
+    const countLabel = document.getElementById('count-label');
+    const gameTitle = document.getElementById('game-title');
+    const gameOverTitle = document.getElementById('game-over-title');
+    const finalScoreLabel = document.getElementById('final-score-label');
+
+    if (scoreLabel) scoreLabel.textContent = I18N.t('score');
+    if (countLabel) countLabel.textContent = I18N.t('progress');
+    if (gameTitle) gameTitle.textContent = I18N.t('headerCapitals');
+    if (gameOverTitle) gameOverTitle.textContent = I18N.t('gameOver');
+    if (finalScoreLabel) finalScoreLabel.textContent = I18N.t('finalScore');
+    if (restartBtn) restartBtn.textContent = I18N.t('backToMenu');
+    if (backToMenuBtn) backToMenuBtn.textContent = I18N.t('backToMenu');
+
+    if (currentQuestion && !isAnswered) {
+        countryNameEl.textContent = I18N.tCountry(currentQuestion.correct.code, currentQuestion.correct.name);
+        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+            const rawCity = btn.dataset.city;
+            if (rawCity) {
+                btn.textContent = I18N.tCity(rawCity);
+            }
+        });
+    }
+
+    if (!gameOverSection.classList.contains('hidden')) {
+        const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
+        finalMessage.textContent = I18N.getRating(percentage);
+        renderStatsBreakdown();
+    }
+}
+
 // Initialize
 function init() {
-    // Shuffle and pick 20
     const shuffled = [...countries].sort(() => 0.5 - Math.random());
     remainingCountries = shuffled.slice(0, TOTAL_QUESTIONS);
     currentScore = 0;
 
-    // Reset Stats
     continentStats = {};
-    // We only care about stats for the selected 20 countries
     remainingCountries.forEach(c => {
         if (!continentStats[c.continent]) {
             continentStats[c.continent] = { correct: 0, total: 0 };
@@ -83,35 +112,55 @@ function init() {
     });
 
     updateScoreUI();
+    updateUIStrings();
 
-    // UI Reset
     gameContainer.classList.remove('hidden');
     gameOverSection.classList.add('hidden');
     backToMenuBtn.classList.remove('hidden');
 
     generateQuestion();
 
-    // nextBtn.onclick = () => generateQuestion(); // Removed manual next
     const goToMenu = () => window.location.href = '../index.html';
     restartBtn.onclick = goToMenu;
     backToMenuBtn.onclick = goToMenu;
 }
 
+I18N.onLanguageChange(updateUIStrings);
+
 function updateScoreUI() {
     scoreEl.textContent = currentScore;
-    // Calculate progress based on remaining countries relative to TOTAL_QUESTIONS
     const answeredCount = TOTAL_QUESTIONS - remainingCountries.length;
     countEl.textContent = `${answeredCount}/${TOTAL_QUESTIONS}`;
 }
 
 function triggerFlash(type) {
-    flashOverlay.className = 'flash-overlay'; // Reset
-    void flashOverlay.offsetWidth; // Force reflow
+    flashOverlay.className = 'flash-overlay';
+    void flashOverlay.offsetWidth;
     if (type === 'correct') {
         flashOverlay.classList.add('flash-correct');
     } else {
         flashOverlay.classList.add('flash-wrong');
     }
+}
+
+function renderStatsBreakdown() {
+    statsBreakdown.innerHTML = '';
+    const sortedContinents = Object.keys(continentStats).sort();
+
+    sortedContinents.forEach(cont => {
+        const data = continentStats[cont];
+        if (data.total > 0) {
+            let contPercent = Math.round((data.correct / data.total) * 100);
+
+            const row = document.createElement('div');
+            row.className = 'stat-row';
+            row.innerHTML = `
+                <span class="continent-name">${I18N.tContinent(cont)}</span>
+                <span class="continent-score">${contPercent}% (${data.correct}/${data.total})</span>
+            `;
+            statsBreakdown.appendChild(row);
+        }
+    });
 }
 
 function endGame() {
@@ -120,45 +169,10 @@ function endGame() {
     gameOverSection.classList.remove('hidden');
 
     const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
-
     finalScoreVal.textContent = `${percentage}%`;
+    finalMessage.textContent = I18N.getRating(percentage);
 
-    // Set Message
-    let msg = "";
-    if (percentage === 100) msg = "Perfect! 😎 🏆 (Legendary Level!)";
-    else if (percentage >= 90) msg = "Excellent! 😃 ⭐ (Almost flawless!)";
-    else if (percentage >= 80) msg = "Very Good! 😄 ✨ (Keep it up!)";
-    else if (percentage >= 70) msg = "Good! 🙂 👍 (On the right track)";
-    else if (percentage >= 60) msg = "So-so... 🙃 ⚖️ (Barely passing)";
-    else if (percentage >= 50) msg = "Weak! 🤨 ⚠️ (Need to push harder)";
-    else if (percentage >= 40) msg = "Bad! 🤔 📉 (Rethink your strategy)";
-    else if (percentage >= 30) msg = "Very Bad! 🥺 🆘 (Red alert!)";
-    else if (percentage >= 20) msg = "Horrible! 🙄 🤦‍♂️ (Can't even describe it...)";
-    else if (percentage >= 10) msg = "Terrible! 🫠 🌋 (Total disaster)";
-    else msg = "Speechless! 🤯 💀 (What happened here?)";
-
-    finalMessage.textContent = msg;
-
-    // Render Stats
-    statsBreakdown.innerHTML = '';
-    const sortedContinents = Object.keys(continentStats).sort();
-
-    sortedContinents.forEach(cont => {
-        const data = continentStats[cont];
-        // Only show continents that actually appeared in the game
-        if (data.total > 0) {
-            let contPercent = Math.round((data.correct / data.total) * 100);
-
-            const row = document.createElement('div');
-            row.className = 'stat-row';
-            row.innerHTML = `
-                <span class="continent-name">${cont}</span>
-                <span class="continent-score">${contPercent}% (${data.correct}/${data.total})</span>
-            `;
-            statsBreakdown.appendChild(row);
-        }
-    });
-
+    renderStatsBreakdown();
     SoundManager.playWin();
 }
 
@@ -168,48 +182,34 @@ function generateQuestion() {
         return;
     }
 
-    // Reset UI
     isAnswered = false;
-    // feedbackArea.classList.add('hidden'); // No longer using feedback area for button
     optionsContainer.innerHTML = '';
     flagImg.style.opacity = '0';
 
-    // Pick Random
     const randomIndex = Math.floor(Math.random() * remainingCountries.length);
     const correctCountry = remainingCountries[randomIndex];
 
-    // Track attempt for this continent (we track total here)
     continentStats[correctCountry.continent].total++;
-
     remainingCountries.splice(randomIndex, 1);
     updateScoreUI();
 
-    // Distractors (Cities from the same country)
     const capital = correctCountry.capital;
     const popularCity = correctCountry.cities[0];
 
-    // Filter out the Capital to get potential distractors
     const otherCities = correctCountry.cities.filter(city => city !== capital);
-
     let distractors = [];
 
-    // 1. Mandatory Popular City: If the most popular city is not the capital, it MUST be included
     if (popularCity !== capital) {
         distractors.push(popularCity);
     }
 
-    // 2. Add random cities from the same country as distractors until we have 5 total (or no more left)
     const remainingPool = otherCities.filter(city => !distractors.includes(city));
     const shuffledPool = remainingPool.sort(() => 0.5 - Math.random());
 
     const additionalDistractors = shuffledPool.slice(0, 5 - distractors.length);
     distractors = [...distractors, ...additionalDistractors];
 
-    // Create options array: Correct Capital + Distractors
-    let options = [capital, ...distractors];
-
-    // Shuffle options
-    options = options.sort(() => 0.5 - Math.random());
+    let options = [capital, ...distractors].sort(() => 0.5 - Math.random());
 
     currentQuestion = {
         correct: correctCountry,
@@ -217,7 +217,6 @@ function generateQuestion() {
         options: options
     };
 
-    // Render
     const img = new Image();
     img.onload = () => {
         flagImg.src = img.src;
@@ -225,12 +224,12 @@ function generateQuestion() {
     };
     img.src = `https://flagcdn.com/w640/${correctCountry.code.toLowerCase()}.png`;
 
-    countryNameEl.textContent = correctCountry.name;
+    countryNameEl.textContent = I18N.tCountry(correctCountry.code, correctCountry.name);
 
     options.forEach(city => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
-        btn.textContent = city;
+        btn.textContent = I18N.tCity(city);
         btn.dataset.city = city;
         btn.addEventListener('click', () => handleAnswer(city, btn));
         optionsContainer.appendChild(btn);
@@ -246,9 +245,7 @@ function handleAnswer(selectedCity, btnElement) {
     const allButtons = optionsContainer.querySelectorAll('.option-btn');
 
     if (selectedCity === correctCity) {
-        // Correct
         currentScore++;
-        // Track unique success (we already tracked total in generate)
         continentStats[continent].correct++;
 
         SoundManager.playWin();
@@ -257,7 +254,6 @@ function handleAnswer(selectedCity, btnElement) {
         scoreEl.parentElement.classList.add('pulse');
         setTimeout(() => scoreEl.parentElement.classList.remove('pulse'), 500);
     } else {
-        // Incorrect
         SoundManager.playLose();
         triggerFlash('wrong');
         btnElement.classList.add('wrong');
@@ -270,10 +266,8 @@ function handleAnswer(selectedCity, btnElement) {
     }
 
     updateScoreUI();
-
     allButtons.forEach(btn => btn.disabled = true);
 
-    // Auto-advance after 1 second
     setTimeout(() => {
         generateQuestion();
     }, 1000);

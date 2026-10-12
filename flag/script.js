@@ -66,6 +66,39 @@ const flashOverlay = document.getElementById('flash-overlay');
 
 const TOTAL_QUESTIONS = 20;
 
+function updateUIStrings() {
+    const scoreLabel = document.getElementById('score-label');
+    const countLabel = document.getElementById('count-label');
+    const gameTitle = document.getElementById('game-title');
+    const gameOverTitle = document.getElementById('game-over-title');
+    const finalScoreLabel = document.getElementById('final-score-label');
+
+    if (scoreLabel) scoreLabel.textContent = I18N.t('score');
+    if (countLabel) countLabel.textContent = I18N.t('progress');
+    if (gameTitle) gameTitle.textContent = I18N.t('headerFlags');
+    if (gameOverTitle) gameOverTitle.textContent = I18N.t('gameOver');
+    if (finalScoreLabel) finalScoreLabel.textContent = I18N.t('finalScore');
+    if (restartBtn) restartBtn.textContent = I18N.t('backToMenu');
+    if (backToMenuBtn) backToMenuBtn.textContent = I18N.t('backToMenu');
+
+    if (currentQuestion && !isAnswered) {
+        continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
+        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+            const code = btn.dataset.code;
+            const country = currentQuestion.options.find(c => c.code === code);
+            if (country) {
+                btn.textContent = I18N.tCountry(country.code, country.name);
+            }
+        });
+    }
+
+    if (!gameOverSection.classList.contains('hidden')) {
+        const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
+        finalMessage.textContent = I18N.getRating(percentage);
+        renderStatsBreakdown();
+    }
+}
+
 // Initialize
 function init() {
     // Shuffle and pick 20
@@ -75,7 +108,6 @@ function init() {
 
     // Reset Stats
     continentStats = {};
-    // We only care about stats for the selected 20 countries
     remainingCountries.forEach(c => {
         if (!continentStats[c.continent]) {
             continentStats[c.continent] = { correct: 0, total: 0 };
@@ -83,6 +115,7 @@ function init() {
     });
 
     updateScoreUI();
+    updateUIStrings();
 
     // UI Reset
     gameContainer.classList.remove('hidden');
@@ -96,21 +129,42 @@ function init() {
     backToMenuBtn.onclick = goToMenu;
 }
 
+I18N.onLanguageChange(updateUIStrings);
+
 function updateScoreUI() {
     scoreEl.textContent = currentScore;
-    // Calculate progress based on remaining countries relative to TOTAL_QUESTIONS
     const answeredCount = TOTAL_QUESTIONS - remainingCountries.length;
     countEl.textContent = `${answeredCount}/${TOTAL_QUESTIONS}`;
 }
 
 function triggerFlash(type) {
-    flashOverlay.className = 'flash-overlay'; // Reset
-    void flashOverlay.offsetWidth; // Force reflow
+    flashOverlay.className = 'flash-overlay';
+    void flashOverlay.offsetWidth;
     if (type === 'correct') {
         flashOverlay.classList.add('flash-correct');
     } else {
         flashOverlay.classList.add('flash-wrong');
     }
+}
+
+function renderStatsBreakdown() {
+    statsBreakdown.innerHTML = '';
+    const sortedContinents = Object.keys(continentStats).sort();
+
+    sortedContinents.forEach(cont => {
+        const data = continentStats[cont];
+        if (data.total > 0) {
+            let contPercent = Math.round((data.correct / data.total) * 100);
+
+            const row = document.createElement('div');
+            row.className = 'stat-row';
+            row.innerHTML = `
+                <span class="continent-name">${I18N.tContinent(cont)}</span>
+                <span class="continent-score">${contPercent}% (${data.correct}/${data.total})</span>
+            `;
+            statsBreakdown.appendChild(row);
+        }
+    });
 }
 
 function endGame() {
@@ -119,45 +173,10 @@ function endGame() {
     gameOverSection.classList.remove('hidden');
 
     const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
-
     finalScoreVal.textContent = `${percentage}%`;
+    finalMessage.textContent = I18N.getRating(percentage);
 
-    // Set Message
-    let msg = "";
-    if (percentage === 100) msg = "Perfect! 😎 🏆 (Legend level!)";
-    else if (percentage >= 90) msg = "Excellent! 😃 ⭐ (Almost flawless!)";
-    else if (percentage >= 80) msg = "Very Good! 😄 ✨ (Keep it up!)";
-    else if (percentage >= 70) msg = "Good! 🙂 👍 (On the right track)";
-    else if (percentage >= 60) msg = "So-so... 🙃 ⚖️ (Just scraping by)";
-    else if (percentage >= 50) msg = "Weak! 🤨 ⚠️ (Need to push a bit harder)";
-    else if (percentage >= 40) msg = "Bad! 🤔 📉 (Need to rethink the strategy)";
-    else if (percentage >= 30) msg = "Very Bad! 🥺 🆘 (Red alert!)";
-    else if (percentage >= 20) msg = "Horrible! 🙄 🤦‍♂️ (Don't even ask...)";
-    else if (percentage >= 10) msg = "Awful! 🫠 🌋 (Total disaster)";
-    else msg = "Speechless! 🤯 💀 (What happened here?)";
-
-    finalMessage.textContent = msg;
-
-    // Render Stats
-    statsBreakdown.innerHTML = '';
-    const sortedContinents = Object.keys(continentStats).sort();
-
-    sortedContinents.forEach(cont => {
-        const data = continentStats[cont];
-        // Only show continents that actually appeared in the game
-        if (data.total > 0) {
-            let contPercent = Math.round((data.correct / data.total) * 100);
-
-            const row = document.createElement('div');
-            row.className = 'stat-row';
-            row.innerHTML = `
-                <span class="continent-name">${cont}</span>
-                <span class="continent-score">${contPercent}% (${data.correct}/${data.total})</span>
-            `;
-            statsBreakdown.appendChild(row);
-        }
-    });
-
+    renderStatsBreakdown();
     SoundManager.playWin();
 }
 
@@ -176,9 +195,7 @@ function generateQuestion() {
     const randomIndex = Math.floor(Math.random() * remainingCountries.length);
     const correctCountry = remainingCountries[randomIndex];
 
-    // Track attempt for this continent (we track total here)
     continentStats[correctCountry.continent].total++;
-
     remainingCountries.splice(randomIndex, 1);
     updateScoreUI();
 
@@ -196,7 +213,7 @@ function generateQuestion() {
         options: options
     };
 
-    // Render
+    // Render Flag
     const img = new Image();
     img.onload = () => {
         flagImg.src = img.src;
@@ -204,12 +221,12 @@ function generateQuestion() {
     };
     img.src = `https://flagcdn.com/w640/${correctCountry.code.toLowerCase()}.png`;
 
-    continentHint.textContent = correctCountry.continent;
+    continentHint.textContent = I18N.tContinent(correctCountry.continent);
 
     options.forEach(country => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
-        btn.textContent = country.name;
+        btn.textContent = I18N.tCountry(country.code, country.name);
         btn.dataset.code = country.code;
         btn.addEventListener('click', () => handleAnswer(country, btn));
         optionsContainer.appendChild(btn);
@@ -225,9 +242,7 @@ function handleAnswer(selectedCountry, btnElement) {
     const allButtons = optionsContainer.querySelectorAll('.option-btn');
 
     if (selectedCountry.code === correctCode) {
-        // Correct
         currentScore++;
-        // Track unique success (we already tracked total in generate)
         continentStats[continent].correct++;
 
         SoundManager.playWin();
@@ -236,7 +251,6 @@ function handleAnswer(selectedCountry, btnElement) {
         scoreEl.parentElement.classList.add('pulse');
         setTimeout(() => scoreEl.parentElement.classList.remove('pulse'), 500);
     } else {
-        // Incorrect
         SoundManager.playLose();
         triggerFlash('wrong');
         btnElement.classList.add('wrong');
@@ -249,7 +263,6 @@ function handleAnswer(selectedCountry, btnElement) {
     }
 
     updateScoreUI();
-
     allButtons.forEach(btn => btn.disabled = true);
 
     setTimeout(() => {

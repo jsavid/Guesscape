@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guesscape</title>
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <link rel="apple-touch-icon" href="assets/icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap" rel="stylesheet">
@@ -13,7 +15,7 @@
     <div class="container">
         <header>
             <h1>Guesscape</h1>
-            <p class="subtitle">Select a challenge to test your knowledge</p>
+            <p class="subtitle" id="hub-subtitle">Elige un desafío para poner a prueba tus conocimientos</p>
         </header>
 
         <main class="game-grid">
@@ -23,8 +25,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                     </svg>
                 </div>
-                <h2>Flags</h2>
-                <p class="description">Identify world flags from every continent. How many can you get right?</p>
+                <h2 id="flags-card-title">Banderas</h2>
+                <p class="description" id="flags-card-desc">Identifica banderas del mundo de cada continente. ¿Cuántas podrás acertar?</p>
             </a>
 
             <a href="capitals/index.html" class="game-card" id="card-capitals">
@@ -33,8 +35,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                 </div>
-                <h2>Capitals</h2>
-                <p class="description">Test your knowledge of world capitals and city locations.</p>
+                <h2 id="capitals-card-title">Capitales</h2>
+                <p class="description" id="capitals-card-desc">Pon a prueba tus conocimientos sobre capitales y ciudades del mundo.</p>
             </a>
 
             <a href="map/index.html" class="game-card" id="card-maps">
@@ -43,14 +45,30 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                     </svg>
                 </div>
-                <h2>Maps</h2>
-                <p class="description">Explore the world map and locate countries with precision.</p>
+                <h2 id="maps-card-title">Mapas</h2>
+                <p class="description" id="maps-card-desc">Explora el mapa mundial y localiza países con precisión.</p>
             </a>
         </main>
 
         <footer>
-            <p>Hecho tomando 🧉</p>
+            <p id="hub-footer">Hecho tomando 🧉</p>
         </footer>
     </div>
+
+    <script src="assets/i18n.js"></script>
+    <script>
+        function updateHubTexts() {
+            document.getElementById('hub-subtitle').textContent = I18N.t('hubSubtitle');
+            document.getElementById('flags-card-title').textContent = I18N.t('flagsTitle');
+            document.getElementById('flags-card-desc').textContent = I18N.t('flagsDesc');
+            document.getElementById('capitals-card-title').textContent = I18N.t('capitalsTitle');
+            document.getElementById('capitals-card-desc').textContent = I18N.t('capitalsDesc');
+            document.getElementById('maps-card-title').textContent = I18N.t('mapsTitle');
+            document.getElementById('maps-card-desc').textContent = I18N.t('mapsDesc');
+            document.getElementById('hub-footer').textContent = I18N.t('footer');
+        }
+        I18N.onLanguageChange(updateHubTexts);
+        updateHubTexts();
+    </script>
 </body>
 </html>

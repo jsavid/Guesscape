@@ -143,6 +143,24 @@ body {
     overflow: hidden;
 }
 
+/* Hairline non-scaling borders: borders do not thicken when zooming */
+#map-container svg path,
+.jvm-region,
+.jvm-element {
+    vector-effect: non-scaling-stroke !important;
+    stroke: rgba(50, 50, 50, 0.7) !important;
+    stroke-width: 0.35px !important;
+    stroke-linejoin: round !important;
+    stroke-linecap: round !important;
+}
+
+#map-container svg path[fill="#dcfe4b"],
+.jvm-region.jvm-region-selected {
+    vector-effect: non-scaling-stroke !important;
+    stroke: rgba(20, 20, 20, 0.9) !important;
+    stroke-width: 0.5px !important;
+}
+
 
 .continent-hint {
     font-size: 0.9rem;
@@ -417,9 +435,44 @@ body {
 }
 
 .jvm-zoom-btn {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    line-height: 1 !important;
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    background: rgba(30, 41, 59, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    color: var(--text-primary) !important;
     border: 1px solid var(--glass-border) !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.2s ease !important;
+    z-index: 20 !important;
+    user-select: none !important;
+    left: 12px !important;
+}
+
+.jvm-zoom-btn:hover {
+    background: rgba(59, 130, 246, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.08) !important;
+}
+
+.jvm-zoom-btn:active {
+    transform: scale(0.95) !important;
+}
+
+.jvm-zoom-btn.jvm-zoomin {
+    top: 12px !important;
+}
+
+.jvm-zoom-btn.jvm-zoomout {
+    top: 52px !important;
 }
 
 footer {

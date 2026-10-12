@@ -48,12 +48,16 @@ const MAP_CONFIG = {
     draggable: true,
     zoomButtons: true,
     zoomOnScroll: true,
+    zoomMax: 15,
+    zoomMin: 1,
+    zoomStep: 1.4,
+    zoomAnimate: true,
     regionsSelectable: false, // Strictly disable manual selection
     regionStyle: {
         initial: {
-            fill: '#a87932', // Bronze tone for a metallic, elegant look
-            stroke: '#555555', // Softer dark gray
-            strokeWidth: 0.3, // Optimal thickness
+            fill: '#a87932', // Bronze tone preserved
+            stroke: 'rgba(50, 50, 50, 0.7)',
+            strokeWidth: 0.35,
             fillOpacity: 1
         },
         hover: {
@@ -61,18 +65,29 @@ const MAP_CONFIG = {
             cursor: 'default'
         },
         selected: {
-            fill: '#dcfe4b' // Fluorescent yellow for maximum visibility
+            fill: '#dcfe4b', // Fluorescent yellow preserved
+            stroke: 'rgba(20, 20, 20, 0.9)',
+            strokeWidth: 0.5
         }
     },
     onRegionTooltipShow(event, tooltip) {
-        // Disable tooltips so they don't give away the answer
         event.preventDefault();
     },
     onRegionClick(event, code) {
-        // Prevent manual selection by user
         event.preventDefault();
     }
 };
+
+function applyNonScalingBorders() {
+    const mapSvg = document.querySelector('#map-container svg');
+    if (mapSvg) {
+        mapSvg.querySelectorAll('path').forEach(p => {
+            p.setAttribute('vector-effect', 'non-scaling-stroke');
+            p.setAttribute('stroke-linejoin', 'round');
+            p.setAttribute('stroke-linecap', 'round');
+        });
+    }
+}
 
 // Game State
 let currentScore = 0;
@@ -98,28 +113,55 @@ const flashOverlay = document.getElementById('flash-overlay');
 
 const TOTAL_QUESTIONS = 20;
 
-// Initialize Map
-function initMap() {
-    try {
-        console.log("Initializing map...");
-        map = new jsVectorMap(MAP_CONFIG);
-        console.log("Map initialized successfully");
-    } catch (e) {
-        console.error("Error initializing map:", e);
-        // Fallback or alert if map fails
+function updateUIStrings() {
+    const scoreLabel = document.getElementById('score-label');
+    const countLabel = document.getElementById('count-label');
+    const gameTitle = document.getElementById('game-title');
+    const gameOverTitle = document.getElementById('game-over-title');
+    const finalScoreLabel = document.getElementById('final-score-label');
+
+    if (scoreLabel) scoreLabel.textContent = I18N.t('score');
+    if (countLabel) countLabel.textContent = I18N.t('progress');
+    if (gameTitle) gameTitle.textContent = I18N.t('headerMaps');
+    if (gameOverTitle) gameOverTitle.textContent = I18N.t('gameOver');
+    if (finalScoreLabel) finalScoreLabel.textContent = I18N.t('finalScore');
+    if (restartBtn) restartBtn.textContent = I18N.t('backToMenu');
+    if (backToMenuBtn) backToMenuBtn.textContent = I18N.t('backToMenu');
+
+    if (currentQuestion && !isAnswered) {
+        continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
+        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+            const code = btn.dataset.code;
+            const country = currentQuestion.options.find(c => c.code === code);
+            if (country) {
+                const span = btn.querySelector('span');
+                if (span) {
+                    span.textContent = I18N.tCountry(country.code, country.name);
+                }
+            }
+        });
+    }
+
+    if (!gameOverSection.classList.contains('hidden')) {
+        const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
+        finalMessage.textContent = I18N.getRating(percentage);
+        renderStatsBreakdown();
     }
 }
 
-// Initialize Game
+// Initialize
 function init() {
-    if (!map) initMap();
+    try {
+        map = new jsVectorMap(MAP_CONFIG);
+        applyNonScalingBorders();
+    } catch (e) {
+        console.error("Map initialization failed", e);
+    }
 
-    // Shuffle and pick 20
     const shuffled = [...countries].sort(() => 0.5 - Math.random());
     remainingCountries = shuffled.slice(0, TOTAL_QUESTIONS);
     currentScore = 0;
 
-    // Reset Stats
     continentStats = {};
     remainingCountries.forEach(c => {
         if (!continentStats[c.continent]) {
@@ -128,20 +170,20 @@ function init() {
     });
 
     updateScoreUI();
+    updateUIStrings();
 
-    // UI Reset
     gameContainer.classList.remove('hidden');
     gameOverSection.classList.add('hidden');
     backToMenuBtn.classList.remove('hidden');
 
     generateQuestion();
 
-    const goToMenu = () => {
-        window.location.href = '../index.html';
-    };
+    const goToMenu = () => window.location.href = '../index.html';
     restartBtn.onclick = goToMenu;
     backToMenuBtn.onclick = goToMenu;
 }
+
+I18N.onLanguageChange(updateUIStrings);
 
 function updateScoreUI() {
     scoreEl.textContent = currentScore;
@@ -159,29 +201,7 @@ function triggerFlash(type) {
     }
 }
 
-function endGame() {
-    gameContainer.classList.add('hidden');
-    backToMenuBtn.classList.add('hidden');
-    gameOverSection.classList.remove('hidden');
-
-    const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
-    finalScoreVal.textContent = `${percentage}%`;
-
-    let msg = "";
-    if (percentage === 100) msg = "Perfect! 😎 🏆 (Legend level!)";
-    else if (percentage >= 90) msg = "Excellent! 😃 ⭐ (Almost flawless!)";
-    else if (percentage >= 80) msg = "Very Good! 😄 ✨ (Keep it up!)";
-    else if (percentage >= 70) msg = "Good! 🙂 👍 (On the right track)";
-    else if (percentage >= 60) msg = "So-so... 🙃 ⚖️ (Just scraping by)";
-    else if (percentage >= 50) msg = "Weak! 🤨 ⚠️ (Need to push a bit harder)";
-    else if (percentage >= 40) msg = "Bad! 🤔 📉 (Need to rethink the strategy)";
-    else if (percentage >= 30) msg = "Very Bad! 🥺 🆘 (Red alert!)";
-    else if (percentage >= 20) msg = "Horrible! 🙄 🤦‍♂️ (Don't even ask...)";
-    else if (percentage >= 10) msg = "Awful! 🫠 🌋 (Total disaster)";
-    else msg = "Speechless! 🤯 💀 (What happened here?)";
-
-    finalMessage.textContent = msg;
-
+function renderStatsBreakdown() {
     statsBreakdown.innerHTML = '';
     const sortedContinents = Object.keys(continentStats).sort();
 
@@ -192,13 +212,24 @@ function endGame() {
             const row = document.createElement('div');
             row.className = 'stat-row';
             row.innerHTML = `
-                <span class="continent-name">${cont}</span>
+                <span class="continent-name">${I18N.tContinent(cont)}</span>
                 <span class="continent-score">${contPercent}% (${data.correct}/${data.total})</span>
             `;
             statsBreakdown.appendChild(row);
         }
     });
+}
 
+function endGame() {
+    gameContainer.classList.add('hidden');
+    backToMenuBtn.classList.add('hidden');
+    gameOverSection.classList.remove('hidden');
+
+    const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
+    finalScoreVal.textContent = `${percentage}%`;
+    finalMessage.textContent = I18N.getRating(percentage);
+
+    renderStatsBreakdown();
     SoundManager.playWin();
 }
 
@@ -211,7 +242,6 @@ function generateQuestion() {
     isAnswered = false;
     optionsContainer.innerHTML = '';
 
-    // Pick Random
     const randomIndex = Math.floor(Math.random() * remainingCountries.length);
     const correctCountry = remainingCountries[randomIndex];
 
@@ -219,13 +249,12 @@ function generateQuestion() {
     remainingCountries.splice(randomIndex, 1);
     updateScoreUI();
 
-    // Distractors (6 options total)
     const sameContinent = countries.filter(c =>
         c.continent === correctCountry.continent && c.code !== correctCountry.code
     );
 
     const shuffledDistractors = sameContinent.sort(() => 0.5 - Math.random());
-    const distractors = shuffledDistractors.slice(0, 5); // 5 distractors + 1 correct = 6
+    const distractors = shuffledDistractors.slice(0, 5);
     const options = [correctCountry, ...distractors].sort(() => 0.5 - Math.random());
 
     currentQuestion = {
@@ -233,40 +262,34 @@ function generateQuestion() {
         options: options
     };
 
-    // Highlight and Focus on Map
     if (map) {
         try {
             map.clearSelectedRegions();
             const countryCode = correctCountry.code.toUpperCase();
-
-            // Highlight
             map.setSelectedRegions([countryCode]);
-
-            // Zoom/Focus logic for visibility
-            // We use setFocus which handles zooming to specific region(s)
             map.setFocus({
                 regions: [countryCode],
                 animate: true,
-                padding: 0.2 // Give some breathing room
+                padding: 0.2
             });
+            applyNonScalingBorders();
         } catch (e) {
             console.error("Map focus error:", e);
         }
     }
 
-    continentHint.textContent = correctCountry.continent;
+    continentHint.textContent = I18N.tContinent(correctCountry.continent);
 
     options.forEach(country => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
 
-        // Handle special codes for flags (e.g. Kosovo _1 -> xk)
         let flagCode = country.code.toLowerCase();
         if (flagCode === '_1') flagCode = 'xk';
 
         btn.innerHTML = `
             <img src="https://flagcdn.com/w40/${flagCode}.png" class="option-flag" alt="">
-            <span>${country.name}</span>
+            <span>${I18N.tCountry(country.code, country.name)}</span>
         `;
 
         btn.dataset.code = country.code;
@@ -306,10 +329,9 @@ function handleAnswer(selectedCountry, btnElement) {
     allButtons.forEach(btn => btn.disabled = true);
 
     setTimeout(() => {
-        // Clear regions before next question
-        map.clearSelectedRegions();
+        if (map) map.clearSelectedRegions();
         generateQuestion();
-    }, 1500); // Slightly longer delay to see the map
+    }, 1500);
 }
 
 // Start
