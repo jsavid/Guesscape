@@ -588,7 +588,7 @@
                 "es": "Tailandia"
         },
         "tr": {
-                "en": "Turkey",
+                "en": "Türkiye",
                 "es": "Turquía"
         },
         "tm": {

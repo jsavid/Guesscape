@@ -130,7 +130,7 @@ window.gameData.countries = [
     { name: "Taiwan", code: "tw", continent: "Asia", capital: "Taipei", cities: ["New Taipei", "Kaohsiung", "Taichung", "Tainan", "Taoyuan", "Taipei"] },
     { name: "Tajikistan", code: "tj", continent: "Asia", capital: "Dushanbe", cities: ["Khujand", "Kulob", "Bokhtar", "Istaravshan", "Tursunzoda", "Dushanbe"] },
     { name: "Thailand", code: "th", continent: "Asia", capital: "Bangkok", cities: ["Chiang Mai", "Phuket", "Pattaya", "Krabi", "Hat Yai", "Bangkok"] },
-    { name: "Turkey", code: "tr", continent: "Asia", capital: "Ankara", cities: ["Istanbul", "Izmir", "Bursa", "Adana", "Gaziantep", "Ankara"] },
+    { name: "Türkiye", code: "tr", continent: "Asia", capital: "Ankara", cities: ["Istanbul", "Izmir", "Bursa", "Adana", "Gaziantep", "Ankara"] },
     { name: "Turkmenistan", code: "tm", continent: "Asia", capital: "Ashgabat", cities: ["Türkmenabat", "Daşoguz", "Mary", "Balkanabat", "Bayramaly", "Ashgabat"] },
     { name: "United Arab Emirates", code: "ae", continent: "Asia", capital: "Abu Dhabi", cities: ["Dubai", "Sharjah", "Al Ain", "Ajman", "Ras Al Khaimah", "Abu Dhabi"] },
     { name: "Uzbekistan", code: "uz", continent: "Asia", capital: "Tashkent", cities: ["Samarkand", "Namangan", "Andijan", "Nukus", "Bukhara", "Tashkent"] },

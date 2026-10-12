@@ -1,4 +1,4 @@
-﻿window.gameData = window.gameData || {};
+window.gameData = window.gameData || {};
 window.gameData.countries = [
     // South America
     { name: "Argentina", code: "ar", continent: "South America" },
@@ -114,7 +114,7 @@ window.gameData.countries = [
     { name: "Taiwan", code: "tw", continent: "Asia" },
     { name: "Tajikistan", code: "tj", continent: "Asia" },
     { name: "Thailand", code: "th", continent: "Asia" },
-    { name: "Turkey", code: "tr", continent: "Asia" },
+    { name: "Türkiye", code: "tr", continent: "Asia" },
     { name: "Turkmenistan", code: "tm", continent: "Asia" },
     { name: "United Arab Emirates", code: "ae", continent: "Asia" },
     { name: "Uzbekistan", code: "uz", continent: "Asia" },
