@@ -5,8 +5,8 @@
 
     const UI_TRANSLATIONS = {
         hubSubtitle: {
-            en: "Select a challenge to test your knowledge",
-            es: "Elige un desafío para poner a prueba tus conocimientos"
+            en: "",
+            es: ""
         },
         flagsTitle: {
             en: "Flags",
@@ -33,8 +33,8 @@
             es: "Observa el país resaltado en el mapa y adivina de cuál se trata."
         },
         locateTitle: {
-            en: "Locate on Map",
-            es: "Ubicar en el Mapa"
+            en: "Find on Map",
+            es: "Encontrar en el Mapa"
         },
         locateDesc: {
             en: "See the country name and flag, then tap it directly on the world map.",
@@ -93,20 +93,20 @@
             es: "IDENTIFICAR PAÍS"
         },
         headerLocate: {
-            en: "LOCATE ON MAP",
-            es: "UBICAR EN EL MAPA"
+            en: "FIND ON MAP",
+            es: "ENCONTRAR EN EL MAPA"
         },
         modeLocateTab: {
-            en: "Locate on Map",
-            es: "Ubicar en el Mapa"
+            en: "Find on Map",
+            es: "Encontrar en el Mapa"
         },
         modeGuessTab: {
             en: "Identify Country",
             es: "Identificar País"
         },
         locateInstruction: {
-            en: "Locate the country on the map",
-            es: "Ubica el país en el mapa"
+            en: "Find the country on the map",
+            es: "Encuentra el país en el mapa"
         },
         resetZoomBtn: {
             en: "Reset view",
@@ -117,24 +117,24 @@
             es: "¡Correcto!"
         },
         feedbackWrong: {
-            en: "That is {clicked}! The correct one is {correct}.",
-            es: "¡Ese es {clicked}! El correcto es {correct}."
+            en: "You selected {clicked}, {correct} is here:",
+            es: "Seleccionaste {clicked}, {correct} está aquí:"
         },
         diffModalTitle: {
             en: "Select Difficulty",
             es: "Selecciona la Dificultad"
         },
         diffModalSubtitle: {
-            en: "Choose how many questions to play",
-            es: "Elige la cantidad de preguntas para este desafío"
+            en: "",
+            es: ""
         },
         diffEasy: {
             en: "Easy",
             es: "Fácil"
         },
         diffEasyDesc: {
-            en: "Ideal to warm up",
-            es: "Ideal para calentar"
+            en: "",
+            es: ""
         },
         diffEasyPill: {
             en: "10 Questions",
@@ -145,8 +145,8 @@
             es: "Medio"
         },
         diffMediumDesc: {
-            en: "The standard challenge",
-            es: "Desafío estándar"
+            en: "",
+            es: ""
         },
         diffMediumPill: {
             en: "20 Questions",
@@ -157,8 +157,8 @@
             es: "Difícil"
         },
         diffHardDesc: {
-            en: "For geography experts",
-            es: "Para conocedores"
+            en: "",
+            es: ""
         },
         diffHardPill: {
             en: "50 Questions",
@@ -169,8 +169,8 @@
             es: "Extremo"
         },
         diffExtremeDesc: {
-            en: "The ultimate test!",
-            es: "¡La prueba definitiva!"
+            en: "",
+            es: ""
         },
         diffExtremePill: {
             en: "100 Questions",
@@ -1194,12 +1194,7 @@
         },
 
         getRating: (percent) => {
-            for (const r of RATINGS) {
-                if (percent >= r.min) {
-                    return r[currentLang];
-                }
-            }
-            return RATINGS[RATINGS.length - 1][currentLang];
+            return "";
         },
 
         updateSwitcherUI: () => {

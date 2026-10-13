@@ -250,8 +250,6 @@ function updateUIStrings() {
     }
 
     if (!gameOverSection.classList.contains('hidden')) {
-        const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
-        finalMessage.textContent = I18N.getRating(percentage);
         renderStatsBreakdown();
     }
 }
@@ -430,7 +428,7 @@ function getCountryFocusGeometry(code) {
 }
 
 // Smooth, direct zoom towards the country ("zoom suavemente") without any sideways deviation
-function smoothFocusCountry(code, duration = 900) {
+function smoothFocusCountry(code, duration = 900, zoomMultiplier = 1.0) {
     if (!map || !map.regions) return;
     const geom = getCountryFocusGeometry(code);
     if (!geom) return;
@@ -441,10 +439,12 @@ function smoothFocusCountry(code, duration = 900) {
     const viewportMinDim = Math.min(map._width || 600, map._height || 400);
     const maxDim = Math.max(geom.width, geom.height);
 
-    // Calculate optimal scale so that country fills ~46% of the viewport prominently
-    // Clamped between 2.2x baseScale (large countries) and 6.2x baseScale (small/medium countries)
-    const idealScale = (viewportMinDim * 0.46) / Math.max(maxDim, 16);
-    const targetScale = Math.min(Math.max(idealScale, baseScale * 2.2), baseScale * 6.2);
+    // Calculate optimal scale so that country fills prominently
+    // zoomMultiplier allows zooming in deeper ("haciendo más zoom")
+    const idealScale = ((viewportMinDim * 0.46) / Math.max(maxDim, 16)) * zoomMultiplier;
+    const minScale = baseScale * 2.4 * zoomMultiplier;
+    const maxScale = Math.min(baseScale * 8.5 * zoomMultiplier, (map.params?.zoomMax || 50));
+    const targetScale = Math.min(Math.max(idealScale, minScale), maxScale);
 
     const startScale = map.scale || baseScale;
     const startTransX = map.transX || 0;
@@ -683,13 +683,15 @@ function renderStatsBreakdown() {
 }
 
 function endGame() {
+    clearLocateTimers();
+    gameApp.classList.remove('map-locked');
     gameContainer.classList.add('hidden');
     backToMenuBtn.classList.add('hidden');
     gameOverSection.classList.remove('hidden');
 
     const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
     finalScoreVal.textContent = `${percentage}%`;
-    finalMessage.textContent = I18N.getRating(percentage);
+    if (finalMessage) finalMessage.textContent = '';
 
     renderStatsBreakdown();
     SoundManager.playWin();
@@ -715,6 +717,8 @@ function switchMode(newMode) {
 }
 
 function startNewGame() {
+    clearLocateTimers();
+    gameApp.classList.remove('map-locked');
     const validCountries = getValidMapCountries();
     const sourceList = validCountries.length >= TOTAL_QUESTIONS ? validCountries : countries;
     const shuffled = [...sourceList].sort(() => 0.5 - Math.random());
@@ -831,10 +835,17 @@ function generateQuestion() {
     }
 }
 
+let locateAnswerTimers = [];
+function clearLocateTimers() {
+    locateAnswerTimers.forEach(id => clearTimeout(id));
+    locateAnswerTimers = [];
+}
+
 // Locate mode answer handler (clicking region on the map)
 function handleLocateAnswer(clickedCode) {
     if (isAnswered || !currentQuestion) return;
     isAnswered = true;
+    clearLocateTimers();
 
     // Lock map interactions while showing feedback
     gameApp.classList.add('map-locked');
@@ -857,18 +868,16 @@ function handleLocateAnswer(clickedCode) {
         smoothFocusCountry(correctCode, 950);
 
         updateScoreUI();
-        setTimeout(() => {
+        const tNext = setTimeout(() => {
             gameApp.classList.remove('map-locked');
             generateQuestion();
         }, 1900);
+        locateAnswerTimers.push(tNext);
     } else {
+        // 1. Error inmediato: sonido de error, flash rojo y el país errado en ROJO
         SoundManager.playLose(); // Error sound buzzer!
         triggerFlash('wrong');
         highlightRegion(clickedUpper, 'wrong'); // Red on clicked country!
-        highlightRegion(correctCode, 'target'); // Strong fluorescent yellow on correct country!
-
-        // Slow, gradual zoom towards the correct country ("zoom despacio")
-        smoothFocusCountry(correctCode, 1050);
 
         const clickedName = getCountryDisplayName(clickedUpper);
         const correctName = I18N.tCountry(currentQuestion.correct.code, currentQuestion.correct.name);
@@ -878,10 +887,21 @@ function handleLocateAnswer(clickedCode) {
         showFeedback('wrong', feedbackMsg);
 
         updateScoreUI();
-        setTimeout(() => {
+
+        // 2. Primero aparece el error en rojo; luego (a los 750ms), se muestra el correcto en VERDE
+        //    y viaja despacio hacia el país correcto suavemente y haciendo más zoom (zoomMultiplier: 1.55, duración: 1500ms)
+        const tReveal = setTimeout(() => {
+            highlightRegion(correctCode, 'correct'); // Verde en el país correcto!
+            smoothFocusCountry(correctCode, 1500, 1.55); // Despacio, suavemente y con más zoom
+        }, 750);
+        locateAnswerTimers.push(tReveal);
+
+        // 3. Tiempo prudencial para contemplar la respuesta correcta ampliada antes de la siguiente pregunta
+        const tNext = setTimeout(() => {
             gameApp.classList.remove('map-locked');
             generateQuestion();
-        }, 2700);
+        }, 3800);
+        locateAnswerTimers.push(tNext);
     }
 }
 

@@ -98,8 +98,6 @@ function updateUIStrings() {
     }
 
     if (!gameOverSection.classList.contains('hidden')) {
-        const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
-        finalMessage.textContent = I18N.getRating(percentage);
         renderStatsBreakdown();
     }
 }
@@ -179,7 +177,7 @@ function endGame() {
 
     const percentage = Math.round((currentScore / TOTAL_QUESTIONS) * 100);
     finalScoreVal.textContent = `${percentage}%`;
-    finalMessage.textContent = I18N.getRating(percentage);
+    if (finalMessage) finalMessage.textContent = '';
 
     renderStatsBreakdown();
     SoundManager.playWin();

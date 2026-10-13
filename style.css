@@ -34,7 +34,7 @@ body {
 }
 
 header {
-    margin-bottom: 4rem;
+    margin-bottom: 3.25rem;
     animation: fadeInDown 0.8s ease-out;
 }
 
@@ -45,7 +45,7 @@ h1 {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     letter-spacing: -0.025em;
 }
 
@@ -358,20 +358,12 @@ footer {
 .diff-modal-card h2 {
     font-size: 1.85rem;
     font-weight: 800;
-    margin-bottom: 0.35rem;
+    margin-bottom: 1.5rem;
     background: linear-gradient(to right, #ffffff, #cbd5e1);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     z-index: 1;
-}
-
-.diff-modal-subtitle {
-    font-size: 0.95rem;
-    color: var(--text-muted);
-    margin-bottom: 1.6rem;
-    z-index: 1;
-    line-height: 1.4;
 }
 
 .diff-options-list {
