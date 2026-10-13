@@ -49,14 +49,25 @@
                 <p class="description" id="capitals-card-desc">Pon a prueba tus conocimientos sobre capitales y ciudades del mundo.</p>
             </a>
 
-            <a href="map/index.html" class="game-card" id="card-maps">
+            <a href="map/index.html?mode=locate" class="game-card" id="card-map-locate">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </div>
+                <h2 id="locate-card-title">Ubicar en el Mapa</h2>
+                <p class="description" id="locate-card-desc">Observa el nombre y la bandera del país, y encuéntralo tocándolo en el mapa.</p>
+            </a>
+
+            <a href="map/index.html?mode=guess" class="game-card" id="card-maps">
                 <div class="icon-wrapper">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                     </svg>
                 </div>
-                <h2 id="maps-card-title">Mapas</h2>
-                <p class="description" id="maps-card-desc">Explora el mapa mundial y localiza países con precisión.</p>
+                <h2 id="maps-card-title">Identificar en el Mapa</h2>
+                <p class="description" id="maps-card-desc">Observa el país resaltado en el mapa y adivina de cuál se trata.</p>
             </a>
         </main>
 
@@ -65,8 +76,115 @@
         </footer>
     </div>
 
+    <!-- Difficulty Selection Modal -->
+    <div id="diff-modal" class="diff-modal-overlay" aria-hidden="true">
+        <div class="diff-modal-card" role="dialog" aria-modal="true" aria-labelledby="diff-modal-title">
+            <button type="button" class="diff-modal-close" id="diff-modal-close" aria-label="Cerrar">✕</button>
+            <div class="diff-game-badge" id="diff-game-badge">Banderas</div>
+            <h2 id="diff-modal-title">Selecciona la Dificultad</h2>
+            <p class="diff-modal-subtitle" id="diff-modal-subtitle">Elige la cantidad de preguntas para este desafío</p>
+
+            <div class="diff-options-list">
+                <button type="button" class="diff-option-btn diff-easy" data-questions="10">
+                    <div class="diff-option-left">
+                        <span class="diff-icon-dot"></span>
+                        <div class="diff-info">
+                            <span class="diff-name" id="diff-name-easy">Fácil</span>
+                            <span class="diff-tagline" id="diff-desc-easy">Ideal para calentar</span>
+                        </div>
+                    </div>
+                    <span class="diff-questions-pill" id="diff-pill-easy">10 Preguntas</span>
+                </button>
+
+                <button type="button" class="diff-option-btn diff-medium" data-questions="20">
+                    <div class="diff-option-left">
+                        <span class="diff-icon-dot"></span>
+                        <div class="diff-info">
+                            <span class="diff-name" id="diff-name-medium">Medio</span>
+                            <span class="diff-tagline" id="diff-desc-medium">Desafío estándar</span>
+                        </div>
+                    </div>
+                    <span class="diff-questions-pill" id="diff-pill-medium">20 Preguntas</span>
+                </button>
+
+                <button type="button" class="diff-option-btn diff-hard" data-questions="50">
+                    <div class="diff-option-left">
+                        <span class="diff-icon-dot"></span>
+                        <div class="diff-info">
+                            <span class="diff-name" id="diff-name-hard">Difícil</span>
+                            <span class="diff-tagline" id="diff-desc-hard">Para conocedores</span>
+                        </div>
+                    </div>
+                    <span class="diff-questions-pill" id="diff-pill-hard">50 Preguntas</span>
+                </button>
+
+                <button type="button" class="diff-option-btn diff-extreme" data-questions="100">
+                    <div class="diff-option-left">
+                        <span class="diff-icon-dot"></span>
+                        <div class="diff-info">
+                            <span class="diff-name" id="diff-name-extreme">Extremo</span>
+                            <span class="diff-tagline" id="diff-desc-extreme">¡La prueba definitiva!</span>
+                        </div>
+                    </div>
+                    <span class="diff-questions-pill" id="diff-pill-extreme">100 Preguntas</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="assets/i18n.js"></script>
     <script>
+        const modalOverlay = document.getElementById('diff-modal');
+        const modalClose = document.getElementById('diff-modal-close');
+        const gameBadge = document.getElementById('diff-game-badge');
+        let selectedGameUrl = '';
+
+        function openModal(gameName, url) {
+            selectedGameUrl = url;
+            if (gameBadge) gameBadge.textContent = gameName;
+            modalOverlay.classList.add('active');
+            modalOverlay.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('active');
+            modalOverlay.setAttribute('aria-hidden', 'true');
+            selectedGameUrl = '';
+        }
+
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                const url = card.getAttribute('href');
+                const h2 = card.querySelector('h2');
+                const name = h2 ? h2.textContent.trim() : 'Juego';
+                openModal(name, url);
+            });
+        });
+
+        modalClose.addEventListener('click', closeModal);
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+                closeModal();
+            }
+        });
+
+        document.querySelectorAll('.diff-option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const questions = btn.getAttribute('data-questions');
+                if (!selectedGameUrl) return;
+                const separator = selectedGameUrl.includes('?') ? '&' : '?';
+                window.location.href = `${selectedGameUrl}${separator}questions=${questions}`;
+            });
+        });
+
         function updateHubTexts() {
             document.getElementById('hub-subtitle').textContent = I18N.t('hubSubtitle');
             document.getElementById('flags-card-title').textContent = I18N.t('flagsTitle');
@@ -75,9 +193,42 @@
             document.getElementById('countries-card-desc').textContent = I18N.t('countriesDesc');
             document.getElementById('capitals-card-title').textContent = I18N.t('capitalsTitle');
             document.getElementById('capitals-card-desc').textContent = I18N.t('capitalsDesc');
+            document.getElementById('locate-card-title').textContent = I18N.t('locateTitle');
+            document.getElementById('locate-card-desc').textContent = I18N.t('locateDesc');
             document.getElementById('maps-card-title').textContent = I18N.t('mapsTitle');
             document.getElementById('maps-card-desc').textContent = I18N.t('mapsDesc');
             document.getElementById('hub-footer').textContent = I18N.t('footer');
+
+            // Difficulty Modal texts
+            const modalTitle = document.getElementById('diff-modal-title');
+            const modalSub = document.getElementById('diff-modal-subtitle');
+            const nameEasy = document.getElementById('diff-name-easy');
+            const descEasy = document.getElementById('diff-desc-easy');
+            const pillEasy = document.getElementById('diff-pill-easy');
+            const nameMedium = document.getElementById('diff-name-medium');
+            const descMedium = document.getElementById('diff-desc-medium');
+            const pillMedium = document.getElementById('diff-pill-medium');
+            const nameHard = document.getElementById('diff-name-hard');
+            const descHard = document.getElementById('diff-desc-hard');
+            const pillHard = document.getElementById('diff-pill-hard');
+            const nameExtreme = document.getElementById('diff-name-extreme');
+            const descExtreme = document.getElementById('diff-desc-extreme');
+            const pillExtreme = document.getElementById('diff-pill-extreme');
+
+            if (modalTitle) modalTitle.textContent = I18N.t('diffModalTitle');
+            if (modalSub) modalSub.textContent = I18N.t('diffModalSubtitle');
+            if (nameEasy) nameEasy.textContent = I18N.t('diffEasy');
+            if (descEasy) descEasy.textContent = I18N.t('diffEasyDesc');
+            if (pillEasy) pillEasy.textContent = I18N.t('diffEasyPill');
+            if (nameMedium) nameMedium.textContent = I18N.t('diffMedium');
+            if (descMedium) descMedium.textContent = I18N.t('diffMediumDesc');
+            if (pillMedium) pillMedium.textContent = I18N.t('diffMediumPill');
+            if (nameHard) nameHard.textContent = I18N.t('diffHard');
+            if (descHard) descHard.textContent = I18N.t('diffHardDesc');
+            if (pillHard) pillHard.textContent = I18N.t('diffHardPill');
+            if (nameExtreme) nameExtreme.textContent = I18N.t('diffExtreme');
+            if (descExtreme) descExtreme.textContent = I18N.t('diffExtremeDesc');
+            if (pillExtreme) pillExtreme.textContent = I18N.t('diffExtremePill');
         }
         I18N.onLanguageChange(updateHubTexts);
         updateHubTexts();

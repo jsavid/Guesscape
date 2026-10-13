@@ -64,7 +64,12 @@ const optionsContainer = document.getElementById('options-container');
 const backToMenuBtn = document.getElementById('back-to-menu-btn');
 const flashOverlay = document.getElementById('flash-overlay');
 
-const TOTAL_QUESTIONS = 20;
+function getQuestionsCount() {
+    const params = new URLSearchParams(window.location.search);
+    const q = parseInt(params.get('questions'), 10);
+    return [10, 20, 50, 100].includes(q) ? q : 20;
+}
+const TOTAL_QUESTIONS = getQuestionsCount();
 
 function updateUIStrings() {
     const scoreLabel = document.getElementById('score-label');

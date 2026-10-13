@@ -25,12 +25,20 @@
             es: "Pon a prueba tus conocimientos sobre capitales y ciudades del mundo."
         },
         mapsTitle: {
-            en: "Maps",
-            es: "Mapas"
+            en: "Identify on Map",
+            es: "Identificar en el Mapa"
         },
         mapsDesc: {
-            en: "Explore the world map and locate countries with precision.",
-            es: "Explora el mapa mundial y localiza países con precisión."
+            en: "Look at the highlighted country on the map and guess its name.",
+            es: "Observa el país resaltado en el mapa y adivina de cuál se trata."
+        },
+        locateTitle: {
+            en: "Locate on Map",
+            es: "Ubicar en el Mapa"
+        },
+        locateDesc: {
+            en: "See the country name and flag, then tap it directly on the world map.",
+            es: "Observa el nombre y la bandera del país, y encuéntralo tocándolo en el mapa."
         },
         countriesTitle: {
             en: "Countries",
@@ -56,6 +64,10 @@
             en: "Back to Menu",
             es: "Volver al Menú"
         },
+        playAgain: {
+            en: "Play Again",
+            es: "Jugar de Nuevo"
+        },
         gameOver: {
             en: "Game Over!",
             es: "¡Fin del Juego!"
@@ -77,8 +89,92 @@
             es: "CAPITALES"
         },
         headerMaps: {
-            en: "MAPS",
-            es: "MAPAS"
+            en: "IDENTIFY ON MAP",
+            es: "IDENTIFICAR PAÍS"
+        },
+        headerLocate: {
+            en: "LOCATE ON MAP",
+            es: "UBICAR EN EL MAPA"
+        },
+        modeLocateTab: {
+            en: "Locate on Map",
+            es: "Ubicar en el Mapa"
+        },
+        modeGuessTab: {
+            en: "Identify Country",
+            es: "Identificar País"
+        },
+        locateInstruction: {
+            en: "Locate the country on the map",
+            es: "Ubica el país en el mapa"
+        },
+        resetZoomBtn: {
+            en: "Reset view",
+            es: "Restablecer vista"
+        },
+        feedbackCorrect: {
+            en: "Correct!",
+            es: "¡Correcto!"
+        },
+        feedbackWrong: {
+            en: "That is {clicked}! The correct one is {correct}.",
+            es: "¡Ese es {clicked}! El correcto es {correct}."
+        },
+        diffModalTitle: {
+            en: "Select Difficulty",
+            es: "Selecciona la Dificultad"
+        },
+        diffModalSubtitle: {
+            en: "Choose how many questions to play",
+            es: "Elige la cantidad de preguntas para este desafío"
+        },
+        diffEasy: {
+            en: "Easy",
+            es: "Fácil"
+        },
+        diffEasyDesc: {
+            en: "Ideal to warm up",
+            es: "Ideal para calentar"
+        },
+        diffEasyPill: {
+            en: "10 Questions",
+            es: "10 Preguntas"
+        },
+        diffMedium: {
+            en: "Medium",
+            es: "Medio"
+        },
+        diffMediumDesc: {
+            en: "The standard challenge",
+            es: "Desafío estándar"
+        },
+        diffMediumPill: {
+            en: "20 Questions",
+            es: "20 Preguntas"
+        },
+        diffHard: {
+            en: "Hard",
+            es: "Difícil"
+        },
+        diffHardDesc: {
+            en: "For geography experts",
+            es: "Para conocedores"
+        },
+        diffHardPill: {
+            en: "50 Questions",
+            es: "50 Preguntas"
+        },
+        diffExtreme: {
+            en: "Extreme",
+            es: "Extremo"
+        },
+        diffExtremeDesc: {
+            en: "The ultimate test!",
+            es: "¡La prueba definitiva!"
+        },
+        diffExtremePill: {
+            en: "100 Questions",
+            es: "100 Preguntas"
         }
     };
 

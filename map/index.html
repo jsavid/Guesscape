@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map Quiz - Guesscape</title>
+    <title>Guesscape - Map Quiz</title>
     <link rel="icon" type="image/png" href="../assets/icon.png">
     <!-- CSS for jsVectorMap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap/dist/css/jsvectormap.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -19,12 +19,12 @@
     <svg width="0" height="0" style="position:absolute;z-index:-1;">
         <defs>
             <linearGradient id="earthGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#d2b48c;stop-opacity:1" /> <!-- Tan -->
-                <stop offset="100%" style="stop-color:#bc8f8f;stop-opacity:1" /> <!-- Rosy Brown -->
+                <stop offset="0%" style="stop-color:#d2b48c;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#bc8f8f;stop-opacity:1" />
             </linearGradient>
             <linearGradient id="selectedGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#dcfe4b;stop-opacity:1" /> <!-- Neon Yellow-Green -->
-                <stop offset="100%" style="stop-color:#ffff00;stop-opacity:1" /> <!-- Pure Yellow -->
+                <stop offset="0%" style="stop-color:#dcfe4b;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#ffff00;stop-opacity:1" />
             </linearGradient>
         </defs>
     </svg>
@@ -39,7 +39,7 @@
                 <span class="value" id="score">0</span>
             </div>
             <div class="app-title">
-                <h1 id="game-title">MAPAS</h1>
+                <h1 id="game-title">UBICAR EN EL MAPA</h1>
             </div>
             <div class="stat-item">
                 <span class="label" id="count-label">Progreso</span>
@@ -52,31 +52,66 @@
             <h2 id="game-over-title">¡Fin del Juego!</h2>
             <div class="final-score">
                 <span class="label" id="final-score-label">Puntuación Final</span>
-                <span class="value" id="final-score-value">0</span>
+                <span class="value" id="final-score-value">0%</span>
             </div>
             <div id="stats-breakdown" class="stats-breakdown">
                 <!-- Javascript will populate this -->
             </div>
             <p id="final-message" class="final-message"></p>
-            <button id="restart-btn" class="primary-btn">Volver al Menú</button>
+            <div class="game-over-actions">
+                <button id="play-again-btn" class="primary-btn">Jugar de Nuevo</button>
+                <button id="restart-btn" class="primary-btn-outline">Volver al Menú</button>
+            </div>
         </section>
 
+        <!-- Main Game Container -->
         <section id="game-container" class="glass-panel">
             <div class="loading-overlay hidden" id="loading">
                 <div class="spinner"></div>
             </div>
 
-            <div class="map-stage">
-                <div id="map-container" style="width: 100%;"></div>
-                <div class="continent-hint" id="continent-hint">
-                    <!-- Javascript will populate this -->
+            <!-- Locate Mode Target Card (Name + Flag prompt) -->
+            <div id="locate-target-card" class="locate-target-card">
+                <div class="target-flag-box">
+                    <img id="target-flag-img" class="target-flag-img" src="" alt="Bandera">
+                </div>
+                <div class="target-meta">
+                    <div class="target-badges">
+                        <span class="target-continent-badge" id="target-continent"></span>
+                    </div>
+                    <h2 class="target-country-name" id="target-country-name"></h2>
+                    <p class="target-instruction" id="target-instruction">Ubica el país en el mapa</p>
                 </div>
             </div>
 
-            <div class="options-grid" id="options-container">
-                <!-- Buttons will be injected here -->
+            <!-- Feedback Toast (shows on wrong click to teach location) -->
+            <div id="locate-feedback" class="locate-feedback hidden"></div>
+
+            <!-- Map Viewport -->
+            <div class="map-stage">
+                <div id="map-container">
+                    <!-- Floating Map Zoom Controls -->
+                    <div class="map-floating-controls">
+                        <button type="button" class="map-ctrl-btn" id="ctrl-zoomin" title="Zoom In" aria-label="Acercar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/></svg>
+                        </button>
+                        <button type="button" class="map-ctrl-btn" id="ctrl-zoomout" title="Zoom Out" aria-label="Alejar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/></svg>
+                        </button>
+                        <button type="button" class="map-ctrl-btn" id="ctrl-reset" title="Restablecer vista" aria-label="Restablecer">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="continent-hint hidden" id="continent-hint">
+                    <!-- Javascript will populate this in guess mode -->
+                </div>
             </div>
 
+            <!-- Guess Mode Options Grid (Hidden in Locate mode) -->
+            <div class="options-grid hidden" id="options-container">
+                <!-- Buttons will be injected here -->
+            </div>
         </section>
 
         <div class="actions-footer">

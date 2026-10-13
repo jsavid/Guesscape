@@ -108,6 +108,7 @@ p.subtitle {
     background-image: url('assets/capitals_bg.jpg');
 }
 
+#card-map-locate::before,
 #card-maps::before {
     background-image: url('assets/maps_bg.jpg');
 }
@@ -125,18 +126,22 @@ p.subtitle {
 }
 
 .game-card:nth-child(1) {
-    animation-delay: 0.15s;
+    animation-delay: 0.12s;
 }
 
 .game-card:nth-child(2) {
-    animation-delay: 0.3s;
+    animation-delay: 0.24s;
 }
 
 .game-card:nth-child(3) {
-    animation-delay: 0.45s;
+    animation-delay: 0.36s;
 }
 
 .game-card:nth-child(4) {
+    animation-delay: 0.48s;
+}
+
+.game-card:nth-child(5) {
     animation-delay: 0.6s;
 }
 
@@ -241,5 +246,288 @@ footer {
 
     body {
         padding: 1.5rem;
+    }
+}
+
+/* ==========================================================================
+   Difficulty Selection Modal
+   ========================================================================== */
+.diff-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(8, 12, 26, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.diff-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.diff-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    background: linear-gradient(165deg, rgba(26, 34, 56, 0.95) 0%, rgba(13, 20, 36, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.7), 0 0 40px rgba(99, 102, 241, 0.18);
+    border-radius: 28px;
+    padding: 2.25rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transform: scale(0.92) translateY(18px);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.diff-modal-overlay.active .diff-modal-card {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+.diff-modal-card::before {
+    content: '';
+    position: absolute;
+    top: -30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.22) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.diff-modal-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+
+.diff-modal-close:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    transform: rotate(90deg);
+}
+
+.diff-game-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.95rem;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 100px;
+    color: #a5b4fc;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.85rem;
+    z-index: 1;
+}
+
+.diff-modal-card h2 {
+    font-size: 1.85rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    background: linear-gradient(to right, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    z-index: 1;
+}
+
+.diff-modal-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 1.6rem;
+    z-index: 1;
+    line-height: 1.4;
+}
+
+.diff-options-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    z-index: 1;
+}
+
+.diff-option-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.95rem 1.25rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
+    color: var(--text-main);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    font-family: inherit;
+    text-align: left;
+}
+
+.diff-option-btn:hover {
+    transform: translateY(-2px) scale(1.01);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.diff-option-left {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.diff-icon-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
+    flex-shrink: 0;
+}
+
+.diff-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.diff-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.diff-tagline {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.diff-questions-pill {
+    padding: 0.4rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+/* Individual Difficulty Themes */
+/* Fácil - Emerald Green */
+.diff-option-btn.diff-easy .diff-icon-dot {
+    background-color: #10b981;
+    color: #10b981;
+}
+.diff-option-btn.diff-easy:hover {
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 8px 24px -6px rgba(16, 185, 129, 0.3);
+}
+.diff-option-btn.diff-easy:hover .diff-questions-pill {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+
+/* Medio - Indigo / Electric Blue */
+.diff-option-btn.diff-medium .diff-icon-dot {
+    background-color: #3b82f6;
+    color: #3b82f6;
+}
+.diff-option-btn.diff-medium:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 8px 24px -6px rgba(59, 130, 246, 0.3);
+}
+.diff-option-btn.diff-medium:hover .diff-questions-pill {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+}
+
+/* Difícil - Amber / Warm Orange */
+.diff-option-btn.diff-hard .diff-icon-dot {
+    background-color: #f59e0b;
+    color: #f59e0b;
+}
+.diff-option-btn.diff-hard:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 0 8px 24px -6px rgba(245, 158, 11, 0.3);
+}
+.diff-option-btn.diff-hard:hover .diff-questions-pill {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+}
+
+/* Extremo - Crimson Flame / Neon Red */
+.diff-option-btn.diff-extreme .diff-icon-dot {
+    background-color: #ef4444;
+    color: #ef4444;
+}
+.diff-option-btn.diff-extreme:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 8px 24px -6px rgba(239, 68, 68, 0.3);
+}
+.diff-option-btn.diff-extreme:hover .diff-questions-pill {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+}
+
+.diff-option-btn:active {
+    transform: scale(0.98);
+}
+
+@media (max-width: 480px) {
+    .diff-modal-card {
+        padding: 1.75rem 1.25rem;
+        border-radius: 22px;
+    }
+    .diff-modal-card h2 {
+        font-size: 1.5rem;
+    }
+    .diff-option-btn {
+        padding: 0.85rem 1rem;
+    }
+    .diff-questions-pill {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.82rem;
     }
 }

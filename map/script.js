@@ -1,6 +1,6 @@
 const countries = window.gameData.countries;
 
-// Audio System (Reusing from Flag game)
+// Audio System
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 const SoundManager = {
@@ -35,48 +35,106 @@ const SoundManager = {
     },
 
     playLose: () => {
-        SoundManager.playTone(150, 'sawtooth', 0.4);
-        SoundManager.playTone(140, 'sawtooth', 0.4);
+        try {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+
+            // Low frequency error buzzer 1
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sawtooth';
+            osc1.frequency.setValueAtTime(160, now);
+            gain1.gain.setValueAtTime(0.2, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.16);
+
+            // Lower frequency error buzzer 2 (distinct game fail buzz)
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sawtooth';
+            osc2.frequency.setValueAtTime(115, now + 0.16);
+            gain2.gain.setValueAtTime(0.25, now + 0.16);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now + 0.16);
+            osc2.stop(now + 0.45);
+        } catch (e) {
+            console.error("Audio error:", e);
+        }
     }
 };
 
-// Map configuration constants
+// Game Configuration & State
+function getQuestionsCount() {
+    const params = new URLSearchParams(window.location.search);
+    const q = parseInt(params.get('questions'), 10);
+    return [10, 20, 50, 100].includes(q) ? q : 20;
+}
+const TOTAL_QUESTIONS = getQuestionsCount();
+let activeMode = 'locate'; // 'locate' (click map) or 'guess' (choose button)
+let currentScore = 0;
+let remainingCountries = [];
+let currentQuestion = null;
+let isAnswered = false;
+let continentStats = {};
+let map = null;
+
+// Map configuration
 const MAP_CONFIG = {
     selector: '#map-container',
     map: 'world',
     backgroundColor: 'transparent',
     draggable: true,
-    zoomButtons: true,
+    zoomButtons: false, // Using our custom zoom buttons
     zoomOnScroll: true,
-    zoomMax: 15,
+    zoomMax: 50, // Ultra-high zoom for small countries & microstates
     zoomMin: 1,
-    zoomStep: 1.4,
+    zoomStep: 1.45,
     zoomAnimate: true,
-    regionsSelectable: false, // Strictly disable manual selection
+    regionsSelectable: false,
     regionStyle: {
         initial: {
-            fill: '#a87932', // Bronze tone preserved
+            fill: '#a87932', // Bronze earth tone
             stroke: 'rgba(50, 50, 50, 0.7)',
             strokeWidth: 0.35,
             fillOpacity: 1
         },
         hover: {
-            fillOpacity: 0.9,
-            cursor: 'default'
+            fillOpacity: 0.88,
+            cursor: 'pointer'
         },
         selected: {
-            fill: '#dcfe4b', // Fluorescent yellow preserved
-            stroke: 'rgba(20, 20, 20, 0.9)',
-            strokeWidth: 0.5
+            fill: '#dcfe4b', // Fluorescent neon yellow for guess mode
+            stroke: 'rgba(20, 20, 20, 0.95)',
+            strokeWidth: 0.55
         }
     },
-    onRegionTooltipShow(event, tooltip) {
+    onRegionTooltipShow(event) {
+        // Prevent showing tooltip on hover to avoid giving away country names in locate mode
         event.preventDefault();
     },
     onRegionClick(event, code) {
-        event.preventDefault();
+        if (activeMode === 'locate') {
+            handleLocateAnswer(code);
+        }
     }
 };
+
+// Polyfill setSelectedRegions on jsVectorMap prototype if missing
+if (typeof jsVectorMap !== 'undefined' && !jsVectorMap.prototype.setSelectedRegions) {
+    jsVectorMap.prototype.setSelectedRegions = function(regions) {
+        if (typeof this.clearSelectedRegions === 'function') {
+            this.clearSelectedRegions();
+        }
+        if (typeof this._setSelected === 'function') {
+            this._setSelected('regions', regions || []);
+        }
+    };
+}
 
 function applyNonScalingBorders() {
     const mapSvg = document.querySelector('#map-container svg');
@@ -89,29 +147,66 @@ function applyNonScalingBorders() {
     }
 }
 
-// Game State
-let currentScore = 0;
-let remainingCountries = [];
-let currentQuestion = null;
-let isAnswered = false;
-let continentStats = {};
-let map = null;
+function normalizeMapCode(code) {
+    if (!code) return '';
+    let c = code.toUpperCase();
+    if (c === 'XK') return '_1';
+    return c;
+}
+
+function getValidMapCountries() {
+    const mapPaths = window.jsVectorMap?.maps?.world?.paths || window.jsVectorMapHiresData?.paths || {};
+    return countries.filter(c => {
+        const code = normalizeMapCode(c.code);
+        return !!mapPaths[code];
+    });
+}
 
 // DOM Elements
 const scoreEl = document.getElementById('score');
 const countEl = document.getElementById('count');
+const gameApp = document.getElementById('game-app');
 const gameContainer = document.getElementById('game-container');
 const gameOverSection = document.getElementById('game-over');
 const finalScoreVal = document.getElementById('final-score-value');
 const statsBreakdown = document.getElementById('stats-breakdown');
 const finalMessage = document.getElementById('final-message');
 const restartBtn = document.getElementById('restart-btn');
-const continentHint = document.getElementById('continent-hint');
-const optionsContainer = document.getElementById('options-container');
+const playAgainBtn = document.getElementById('play-again-btn');
 const backToMenuBtn = document.getElementById('back-to-menu-btn');
 const flashOverlay = document.getElementById('flash-overlay');
 
-const TOTAL_QUESTIONS = 20;
+// Locate Mode Specific Elements
+const locateTargetCard = document.getElementById('locate-target-card');
+const targetFlagImg = document.getElementById('target-flag-img');
+const targetContinentBadge = document.getElementById('target-continent');
+const targetCountryNameEl = document.getElementById('target-country-name');
+const targetInstructionEl = document.getElementById('target-instruction');
+const locateFeedback = document.getElementById('locate-feedback');
+
+// Guess Mode Elements
+const continentHint = document.getElementById('continent-hint');
+const optionsContainer = document.getElementById('options-container');
+
+// Floating Map Zoom Buttons
+const ctrlZoomIn = document.getElementById('ctrl-zoomin');
+const ctrlZoomOut = document.getElementById('ctrl-zoomout');
+const ctrlReset = document.getElementById('ctrl-reset');
+
+function getCountryDisplayName(code) {
+    if (!code) return '';
+    let codeUpper = code.toUpperCase();
+    if (codeUpper === '_1') codeUpper = 'XK';
+    const fromList = countries.find(c => c.code.toUpperCase() === codeUpper);
+    if (fromList) {
+        return I18N.tCountry(fromList.code, fromList.name);
+    }
+    const mapData = window.jsVectorMap?.maps?.world;
+    if (mapData && mapData.paths && mapData.paths[codeUpper]) {
+        return I18N.tCountry(code.toLowerCase(), mapData.paths[codeUpper].name);
+    }
+    return codeUpper;
+}
 
 function updateUIStrings() {
     const scoreLabel = document.getElementById('score-label');
@@ -122,24 +217,36 @@ function updateUIStrings() {
 
     if (scoreLabel) scoreLabel.textContent = I18N.t('score');
     if (countLabel) countLabel.textContent = I18N.t('progress');
-    if (gameTitle) gameTitle.textContent = I18N.t('headerMaps');
-    if (gameOverTitle) gameOverTitle.textContent = I18N.t('gameOver');
     if (finalScoreLabel) finalScoreLabel.textContent = I18N.t('finalScore');
+    if (gameOverTitle) gameOverTitle.textContent = I18N.t('gameOver');
     if (restartBtn) restartBtn.textContent = I18N.t('backToMenu');
+    if (playAgainBtn) playAgainBtn.textContent = I18N.t('playAgain');
     if (backToMenuBtn) backToMenuBtn.textContent = I18N.t('backToMenu');
+    if (targetInstructionEl) targetInstructionEl.textContent = I18N.t('locateInstruction');
+
+    if (gameTitle) {
+        gameTitle.textContent = activeMode === 'locate'
+            ? I18N.t('headerLocate')
+            : I18N.t('headerMaps');
+    }
 
     if (currentQuestion && !isAnswered) {
-        continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
-        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-            const code = btn.dataset.code;
-            const country = currentQuestion.options.find(c => c.code === code);
-            if (country) {
-                const span = btn.querySelector('span');
-                if (span) {
-                    span.textContent = I18N.tCountry(country.code, country.name);
+        if (activeMode === 'locate') {
+            targetContinentBadge.textContent = I18N.tContinent(currentQuestion.correct.continent);
+            targetCountryNameEl.textContent = I18N.tCountry(currentQuestion.correct.code, currentQuestion.correct.name);
+        } else {
+            continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
+            optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+                const cCode = btn.dataset.code;
+                const country = currentQuestion.options.find(c => c.code === cCode);
+                if (country) {
+                    const span = btn.querySelector('span');
+                    if (span) {
+                        span.textContent = I18N.tCountry(country.code, country.name);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     if (!gameOverSection.classList.contains('hidden')) {
@@ -149,41 +256,396 @@ function updateUIStrings() {
     }
 }
 
-// Initialize
-function init() {
-    try {
-        map = new jsVectorMap(MAP_CONFIG);
-        applyNonScalingBorders();
-    } catch (e) {
-        console.error("Map initialization failed", e);
+let currentZoomAnimId = null;
+
+function cancelCurrentZoom() {
+    if (currentZoomAnimId) {
+        cancelAnimationFrame(currentZoomAnimId);
+        currentZoomAnimId = null;
     }
-
-    const shuffled = [...countries].sort(() => 0.5 - Math.random());
-    remainingCountries = shuffled.slice(0, TOTAL_QUESTIONS);
-    currentScore = 0;
-
-    continentStats = {};
-    remainingCountries.forEach(c => {
-        if (!continentStats[c.continent]) {
-            continentStats[c.continent] = { correct: 0, total: 0 };
-        }
-    });
-
-    updateScoreUI();
-    updateUIStrings();
-
-    gameContainer.classList.remove('hidden');
-    gameOverSection.classList.add('hidden');
-    backToMenuBtn.classList.remove('hidden');
-
-    generateQuestion();
-
-    const goToMenu = () => window.location.href = '../index.html';
-    restartBtn.onclick = goToMenu;
-    backToMenuBtn.onclick = goToMenu;
 }
 
-I18N.onLanguageChange(updateUIStrings);
+// Ease out cubic function for smooth, luxurious deceleration
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+}
+
+// Reset Map Zoom to Full View smoothly
+function resetMapView(animate = true) {
+    if (!map) return;
+    cancelCurrentZoom();
+
+    const baseScale = map._baseScale || 1;
+    const baseTransX = typeof map._baseTransX !== 'undefined' ? map._baseTransX : 0;
+    const baseTransY = typeof map._baseTransY !== 'undefined' ? map._baseTransY : 0;
+
+    if (!animate) {
+        map.scale = baseScale;
+        map.transX = baseTransX;
+        map.transY = baseTransY;
+        map._applyTransform();
+        applyNonScalingBorders();
+        return;
+    }
+
+    const startScale = map.scale || baseScale;
+    const startTransX = map.transX || baseTransX;
+    const startTransY = map.transY || baseTransY;
+
+    // Linear screen pixel coordinates eliminate any parabolic sideways sway
+    const pixelXStart = startTransX * startScale;
+    const pixelYStart = startTransY * startScale;
+    const pixelXEnd = baseTransX * baseScale;
+    const pixelYEnd = baseTransY * baseScale;
+
+    const startTime = performance.now();
+    const duration = 650;
+
+    function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = easeOutCubic(progress);
+
+        const currentScale = startScale + (baseScale - startScale) * ease;
+        const currentPixelX = pixelXStart + (pixelXEnd - pixelXStart) * ease;
+        const currentPixelY = pixelYStart + (pixelYEnd - pixelYStart) * ease;
+
+        map.scale = currentScale;
+        map.transX = currentPixelX / currentScale;
+        map.transY = currentPixelY / currentScale;
+
+        map.canvas.applyTransformParams(map.scale, map.transX, map.transY);
+        applyNonScalingBorders();
+
+        if (progress < 1) {
+            currentZoomAnimId = requestAnimationFrame(step);
+        } else {
+            currentZoomAnimId = null;
+            if (typeof map._applyTransform === 'function') {
+                map._applyTransform();
+            }
+        }
+    }
+
+    currentZoomAnimId = requestAnimationFrame(step);
+}
+
+// Calculate clamped translation to keep map boundaries properly aligned
+function getClampedTranslation(targetScale, anchorX, anchorY) {
+    const curW = map._width || 800;
+    const curH = map._height || 450;
+    const defW = map._defaultWidth || 950;
+    const defH = map._defaultHeight || 550;
+
+    let transX = anchorX + curW / (2 * targetScale);
+    let transY = anchorY + curH / (2 * targetScale);
+
+    let maxTransX, minTransX, maxTransY, minTransY;
+    if (defW * targetScale <= curW) {
+        maxTransX = minTransX = (curW - defW * targetScale) / (2 * targetScale);
+    } else {
+        maxTransX = 0;
+        minTransX = (curW - defW * targetScale) / targetScale;
+    }
+
+    if (defH * targetScale <= curH) {
+        maxTransY = minTransY = (curH - defH * targetScale) / (2 * targetScale);
+    } else {
+        maxTransY = 0;
+        minTransY = (curH - defH * targetScale) / targetScale;
+    }
+
+    if (transX > maxTransX) transX = maxTransX;
+    else if (transX < minTransX) transX = minTransX;
+
+    if (transY > maxTransY) transY = maxTransY;
+    else if (transY < minTransY) transY = minTransY;
+
+    return { transX, transY };
+}
+
+// Extract mainland center and size for optimal country camera framing
+function getCountryFocusGeometry(code) {
+    const codeUpper = normalizeMapCode(code);
+    const region = map?.regions?.[codeUpper];
+    if (!region?.element?.shape) return null;
+
+    // First try extracting mainland (largest subpath) from path definition
+    const rawPath = window.jsVectorMapHiresData?.paths?.[codeUpper]?.path 
+                 || window.jsVectorMap?.maps?.world?.paths?.[codeUpper]?.path;
+
+    if (rawPath) {
+        const subpaths = rawPath.split(/(?=[Mm])/);
+        let bestSub = rawPath;
+        let maxLen = 0;
+        subpaths.forEach(s => {
+            if (s.length > maxLen) {
+                maxLen = s.length;
+                bestSub = s;
+            }
+        });
+
+        const matches = bestSub.match(/-?[\d\.]+/g);
+        if (matches && matches.length >= 4) {
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            for (let i = 0; i < matches.length; i += 2) {
+                const x = parseFloat(matches[i]);
+                const y = parseFloat(matches[i + 1]);
+                if (!isNaN(x) && !isNaN(y)) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+            if (minX !== Infinity && maxX > minX && maxY > minY) {
+                const width = maxX - minX;
+                const height = maxY - minY;
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                return {
+                    anchorX: -centerX,
+                    anchorY: -centerY,
+                    width,
+                    height
+                };
+            }
+        }
+    }
+
+    // Fallback: standard getBBox from shape
+    try {
+        const bbox = region.element.shape.getBBox();
+        if (bbox && bbox.width && bbox.height) {
+            return {
+                anchorX: -(bbox.x + bbox.width / 2),
+                anchorY: -(bbox.y + bbox.height / 2),
+                width: bbox.width,
+                height: bbox.height
+            };
+        }
+    } catch (e) {}
+
+    return null;
+}
+
+// Smooth, direct zoom towards the country ("zoom suavemente") without any sideways deviation
+function smoothFocusCountry(code, duration = 900) {
+    if (!map || !map.regions) return;
+    const geom = getCountryFocusGeometry(code);
+    if (!geom) return;
+
+    cancelCurrentZoom();
+
+    const baseScale = map._baseScale || 1;
+    const viewportMinDim = Math.min(map._width || 600, map._height || 400);
+    const maxDim = Math.max(geom.width, geom.height);
+
+    // Calculate optimal scale so that country fills ~46% of the viewport prominently
+    // Clamped between 2.2x baseScale (large countries) and 6.2x baseScale (small/medium countries)
+    const idealScale = (viewportMinDim * 0.46) / Math.max(maxDim, 16);
+    const targetScale = Math.min(Math.max(idealScale, baseScale * 2.2), baseScale * 6.2);
+
+    const startScale = map.scale || baseScale;
+    const startTransX = map.transX || 0;
+    const startTransY = map.transY || 0;
+
+    // Target translation centered on mainland anchor with boundary clamping
+    const clamped = getClampedTranslation(targetScale, geom.anchorX, geom.anchorY);
+    const endTransX = clamped.transX;
+    const endTransY = clamped.transY;
+
+    // Interpolating physical screen pixel coordinates (trans * scale) guarantees
+    // the target point travels in a 100% straight, calm path straight to center screen
+    const pixelXStart = startTransX * startScale;
+    const pixelYStart = startTransY * startScale;
+    const pixelXEnd = endTransX * targetScale;
+    const pixelYEnd = endTransY * targetScale;
+
+    const startTime = performance.now();
+
+    function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = easeOutCubic(progress);
+
+        const currentScale = startScale + (targetScale - startScale) * ease;
+        const currentPixelX = pixelXStart + (pixelXEnd - pixelXStart) * ease;
+        const currentPixelY = pixelYStart + (pixelYEnd - pixelYStart) * ease;
+
+        map.scale = currentScale;
+        map.transX = currentPixelX / currentScale;
+        map.transY = currentPixelY / currentScale;
+
+        map.canvas.applyTransformParams(map.scale, map.transX, map.transY);
+        applyNonScalingBorders();
+
+        if (progress < 1) {
+            currentZoomAnimId = requestAnimationFrame(step);
+        } else {
+            currentZoomAnimId = null;
+            if (typeof map._applyTransform === 'function') {
+                map._applyTransform();
+            }
+        }
+    }
+
+    currentZoomAnimId = requestAnimationFrame(step);
+}
+
+// Alias for backwards compatibility
+const gentleFocusCountry = smoothFocusCountry;
+
+// Helper to get native SVG path DOM element for any country code
+function getRegionPathNode(code) {
+    if (!code) return null;
+    const codeUpper = normalizeMapCode(code);
+
+    // 1. Direct query in DOM by data-code attribute
+    const directQuery = document.querySelector(`#map-container path[data-code="${codeUpper}"], #map-container [data-code="${codeUpper}"]`);
+    if (directQuery) return directQuery;
+
+    // 2. Query through jsVectorMap instance structure
+    if (map && map.regions && map.regions[codeUpper]) {
+        const reg = map.regions[codeUpper];
+        if (reg.element?.shape?.node) return reg.element.shape.node;
+        if (reg.element?.node) return reg.element.node;
+    }
+    return null;
+}
+
+// Color specific region as correct (green #22c55e), wrong (red #ef4444), or target (#dcfe4b fluorescent yellow)
+function highlightRegion(code, status) {
+    if (!code) return;
+    const codeUpper = normalizeMapCode(code);
+    const region = map?.regions?.[codeUpper];
+    const node = getRegionPathNode(codeUpper);
+
+    // Exact color palette matching "Identificar en el Mapa"
+    let color = '#22c55e'; // Green for correct
+    let strokeColor = '#14532d';
+    if (status === 'wrong') {
+        color = '#ef4444'; // Red for wrong clicked country
+        strokeColor = '#7f1d1d';
+    } else if (status === 'target') {
+        color = '#dcfe4b'; // Strong fluorescent Yellow identical to "Identificar en el Mapa"
+        strokeColor = 'rgba(20, 20, 20, 0.95)';
+    }
+
+    // 1. Native jsVectorMap selection for target
+    if (status === 'target') {
+        try {
+            if (region?.element) {
+                region.element.select(true);
+            } else if (map && typeof map.setSelectedRegions === 'function') {
+                map.setSelectedRegions([codeUpper]);
+            }
+        } catch (e) {}
+    }
+
+    // 2. Update jsVectorMap internal shape style
+    if (region?.element) {
+        try {
+            if (region.element.shape) {
+                region.element.shape.style = region.element.shape.style || {};
+                region.element.shape.style.current = region.element.shape.style.current || {};
+                region.element.shape.style.current.fill = color;
+                region.element.shape.style.current.fillOpacity = 1;
+                region.element.shape.style.current.stroke = strokeColor;
+                region.element.shape.style.current.strokeWidth = 0.85;
+                if (typeof region.element.shape.updateStyle === 'function') {
+                    region.element.shape.updateStyle();
+                }
+            }
+            if (typeof region.element.setStyle === 'function') {
+                region.element.setStyle({
+                    fill: color,
+                    fillOpacity: 1,
+                    stroke: strokeColor,
+                    strokeWidth: 0.85
+                });
+            }
+        } catch (e) {}
+    }
+
+    // 3. Set inline styles with !important, classes, and attributes on native SVG node
+    if (node) {
+        node.style.setProperty('fill', color, 'important');
+        node.style.setProperty('fill-opacity', '1', 'important');
+        node.style.setProperty('stroke', strokeColor, 'important');
+        node.style.setProperty('stroke-width', '0.85px', 'important');
+        node.setAttribute('fill', color);
+        node.setAttribute('data-status', status);
+
+        node.classList.remove('map-region-correct', 'map-region-wrong', 'map-region-target');
+        node.classList.add(`map-region-${status}`);
+    }
+}
+
+// Clear temporary colors on all regions
+function clearRegionColors() {
+    if (!map) return;
+    try {
+        if (typeof map.clearSelectedRegions === 'function') {
+            map.clearSelectedRegions();
+        }
+
+        // 1. Clear styled paths directly in DOM
+        const styledNodes = document.querySelectorAll('#map-container [data-status], #map-container .map-region-correct, #map-container .map-region-wrong, #map-container .map-region-target');
+        styledNodes.forEach(node => {
+            node.style.removeProperty('fill');
+            node.style.removeProperty('fill-opacity');
+            node.style.removeProperty('stroke');
+            node.style.removeProperty('stroke-width');
+            node.removeAttribute('data-status');
+            node.setAttribute('fill', '#a87932');
+            node.classList.remove('map-region-correct', 'map-region-wrong', 'map-region-target');
+        });
+
+        // 2. Reset jsVectorMap internal shape styles
+        if (map.regions) {
+            for (const code in map.regions) {
+                const reg = map.regions[code];
+                if (reg?.element?.shape) {
+                    try {
+                        reg.element.shape.isSelected = false;
+                        if (reg.element.shape.style?.current) {
+                            delete reg.element.shape.style.current.fill;
+                            delete reg.element.shape.style.current.fillOpacity;
+                            delete reg.element.shape.style.current.stroke;
+                            delete reg.element.shape.style.current.strokeWidth;
+                        }
+                        if (reg.element.shape.node) {
+                            reg.element.shape.node.style.removeProperty('fill');
+                            reg.element.shape.node.style.removeProperty('fill-opacity');
+                            reg.element.shape.node.style.removeProperty('stroke');
+                            reg.element.shape.node.style.removeProperty('stroke-width');
+                            reg.element.shape.node.removeAttribute('data-status');
+                            reg.element.shape.node.setAttribute('fill', '#a87932');
+                            reg.element.shape.node.classList.remove('map-region-correct', 'map-region-wrong', 'map-region-target');
+                        }
+                        if (typeof reg.element.shape.updateStyle === 'function') {
+                            reg.element.shape.updateStyle();
+                        }
+                    } catch (e) {}
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Clear region colors error:", e);
+    }
+}
+
+function showFeedback(type, message) {
+    locateFeedback.className = `locate-feedback feedback-${type}`;
+    locateFeedback.textContent = message;
+    locateFeedback.classList.remove('hidden');
+}
+
+function hideFeedback() {
+    locateFeedback.classList.add('hidden');
+    locateFeedback.textContent = '';
+}
 
 function updateScoreUI() {
     scoreEl.textContent = currentScore;
@@ -208,7 +670,7 @@ function renderStatsBreakdown() {
     sortedContinents.forEach(cont => {
         const data = continentStats[cont];
         if (data.total > 0) {
-            let contPercent = Math.round((data.correct / data.total) * 100);
+            const contPercent = Math.round((data.correct / data.total) * 100);
             const row = document.createElement('div');
             row.className = 'stat-row';
             row.innerHTML = `
@@ -233,6 +695,53 @@ function endGame() {
     SoundManager.playWin();
 }
 
+function switchMode(newMode) {
+    activeMode = newMode;
+
+    if (activeMode === 'locate') {
+        gameApp.classList.add('locate-mode');
+        locateTargetCard.classList.remove('hidden');
+        continentHint.classList.add('hidden');
+        optionsContainer.classList.add('hidden');
+    } else {
+        gameApp.classList.remove('locate-mode');
+        locateTargetCard.classList.add('hidden');
+        hideFeedback();
+        continentHint.classList.remove('hidden');
+        optionsContainer.classList.remove('hidden');
+    }
+
+    startNewGame();
+}
+
+function startNewGame() {
+    const validCountries = getValidMapCountries();
+    const sourceList = validCountries.length >= TOTAL_QUESTIONS ? validCountries : countries;
+    const shuffled = [...sourceList].sort(() => 0.5 - Math.random());
+    remainingCountries = shuffled.slice(0, TOTAL_QUESTIONS);
+    currentScore = 0;
+
+    continentStats = {};
+    remainingCountries.forEach(c => {
+        if (!continentStats[c.continent]) {
+            continentStats[c.continent] = { correct: 0, total: 0 };
+        }
+    });
+
+    clearRegionColors();
+    hideFeedback();
+    resetMapView(false);
+
+    updateScoreUI();
+    updateUIStrings();
+
+    gameContainer.classList.remove('hidden');
+    gameOverSection.classList.add('hidden');
+    backToMenuBtn.classList.remove('hidden');
+
+    generateQuestion();
+}
+
 function generateQuestion() {
     if (remainingCountries.length === 0) {
         endGame();
@@ -240,7 +749,8 @@ function generateQuestion() {
     }
 
     isAnswered = false;
-    optionsContainer.innerHTML = '';
+    clearRegionColors();
+    hideFeedback();
 
     const randomIndex = Math.floor(Math.random() * remainingCountries.length);
     const correctCountry = remainingCountries[randomIndex];
@@ -249,56 +759,134 @@ function generateQuestion() {
     remainingCountries.splice(randomIndex, 1);
     updateScoreUI();
 
-    const sameContinent = countries.filter(c =>
-        c.continent === correctCountry.continent && c.code !== correctCountry.code
-    );
+    let flagCode = correctCountry.code.toLowerCase();
+    if (flagCode === '_1') flagCode = 'xk';
 
-    const shuffledDistractors = sameContinent.sort(() => 0.5 - Math.random());
-    const distractors = shuffledDistractors.slice(0, 5);
-    const options = [correctCountry, ...distractors].sort(() => 0.5 - Math.random());
+    if (activeMode === 'locate') {
+        currentQuestion = {
+            correct: correctCountry
+        };
 
-    currentQuestion = {
-        correct: correctCountry,
-        options: options
-    };
+        targetContinentBadge.textContent = I18N.tContinent(correctCountry.continent);
+        targetCountryNameEl.textContent = I18N.tCountry(correctCountry.code, correctCountry.name);
+        targetFlagImg.src = `https://flagcdn.com/w160/${flagCode}.png`;
+        targetFlagImg.alt = I18N.tCountry(correctCountry.code, correctCountry.name);
 
-    if (map) {
-        try {
-            map.clearSelectedRegions();
-            const countryCode = correctCountry.code.toUpperCase();
-            map.setSelectedRegions([countryCode]);
-            map.setFocus({
-                regions: [countryCode],
-                animate: true,
-                padding: 0.2
-            });
-            applyNonScalingBorders();
-        } catch (e) {
-            console.error("Map focus error:", e);
+        resetMapView(true);
+        applyNonScalingBorders();
+    } else {
+        // Guess mode: multiple choice
+        const sameContinent = countries.filter(c =>
+            c.continent === correctCountry.continent && c.code !== correctCountry.code
+        );
+
+        const shuffledDistractors = sameContinent.sort(() => 0.5 - Math.random());
+        let distractors = shuffledDistractors.slice(0, 5);
+
+        if (distractors.length < 5) {
+            const others = countries.filter(c =>
+                c.code !== correctCountry.code && !distractors.some(d => d.code === c.code)
+            ).sort(() => 0.5 - Math.random());
+            distractors = distractors.concat(others.slice(0, 5 - distractors.length));
         }
+
+        const options = [correctCountry, ...distractors].sort(() => 0.5 - Math.random());
+
+        currentQuestion = {
+            correct: correctCountry,
+            options: options
+        };
+
+        if (map) {
+            try {
+                const countryCode = normalizeMapCode(correctCountry.code);
+                map.setSelectedRegions([countryCode]);
+                highlightRegion(countryCode, 'target');
+                smoothFocusCountry(countryCode, 950);
+                applyNonScalingBorders();
+            } catch (e) {
+                console.error("Map focus error:", e);
+            }
+        }
+
+        continentHint.textContent = I18N.tContinent(correctCountry.continent);
+        optionsContainer.innerHTML = '';
+
+        options.forEach(country => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+
+            let optFlag = country.code.toLowerCase();
+            if (optFlag === '_1') optFlag = 'xk';
+
+            btn.innerHTML = `
+                <img src="https://flagcdn.com/w40/${optFlag}.png" class="option-flag" alt="">
+                <span>${I18N.tCountry(country.code, country.name)}</span>
+            `;
+
+            btn.dataset.code = country.code;
+            btn.addEventListener('click', () => handleGuessAnswer(country, btn));
+            optionsContainer.appendChild(btn);
+        });
     }
-
-    continentHint.textContent = I18N.tContinent(correctCountry.continent);
-
-    options.forEach(country => {
-        const btn = document.createElement('button');
-        btn.className = 'option-btn';
-
-        let flagCode = country.code.toLowerCase();
-        if (flagCode === '_1') flagCode = 'xk';
-
-        btn.innerHTML = `
-            <img src="https://flagcdn.com/w40/${flagCode}.png" class="option-flag" alt="">
-            <span>${I18N.tCountry(country.code, country.name)}</span>
-        `;
-
-        btn.dataset.code = country.code;
-        btn.addEventListener('click', () => handleAnswer(country, btn));
-        optionsContainer.appendChild(btn);
-    });
 }
 
-function handleAnswer(selectedCountry, btnElement) {
+// Locate mode answer handler (clicking region on the map)
+function handleLocateAnswer(clickedCode) {
+    if (isAnswered || !currentQuestion) return;
+    isAnswered = true;
+
+    // Lock map interactions while showing feedback
+    gameApp.classList.add('map-locked');
+
+    const correctCode = normalizeMapCode(currentQuestion.correct.code);
+    const clickedUpper = normalizeMapCode(clickedCode);
+    const continent = currentQuestion.correct.continent;
+
+    if (clickedUpper === correctCode) {
+        currentScore++;
+        continentStats[continent].correct++;
+        SoundManager.playWin();
+        triggerFlash('correct');
+        highlightRegion(clickedUpper, 'correct'); // Green on correct country!
+        showFeedback('correct', I18N.t('feedbackCorrect'));
+        scoreEl.parentElement.classList.add('pulse');
+        setTimeout(() => scoreEl.parentElement.classList.remove('pulse'), 500);
+
+        // Slow, gradual zoom towards the correct country ("zoom despacio")
+        smoothFocusCountry(correctCode, 950);
+
+        updateScoreUI();
+        setTimeout(() => {
+            gameApp.classList.remove('map-locked');
+            generateQuestion();
+        }, 1900);
+    } else {
+        SoundManager.playLose(); // Error sound buzzer!
+        triggerFlash('wrong');
+        highlightRegion(clickedUpper, 'wrong'); // Red on clicked country!
+        highlightRegion(correctCode, 'target'); // Strong fluorescent yellow on correct country!
+
+        // Slow, gradual zoom towards the correct country ("zoom despacio")
+        smoothFocusCountry(correctCode, 1050);
+
+        const clickedName = getCountryDisplayName(clickedUpper);
+        const correctName = I18N.tCountry(currentQuestion.correct.code, currentQuestion.correct.name);
+        const feedbackMsg = I18N.t('feedbackWrong')
+            .replace('{clicked}', clickedName)
+            .replace('{correct}', correctName);
+        showFeedback('wrong', feedbackMsg);
+
+        updateScoreUI();
+        setTimeout(() => {
+            gameApp.classList.remove('map-locked');
+            generateQuestion();
+        }, 2700);
+    }
+}
+
+// Guess mode answer handler (clicking multiple choice buttons)
+function handleGuessAnswer(selectedCountry, btnElement) {
     if (isAnswered) return;
     isAnswered = true;
 
@@ -334,7 +922,65 @@ function handleAnswer(selectedCountry, btnElement) {
     }, 1500);
 }
 
-// Start
+// Setup floating zoom buttons (+, -, reset)
+function setupCustomZoomControls() {
+    if (ctrlZoomIn) {
+        ctrlZoomIn.onclick = (e) => {
+            e.stopPropagation();
+            if (!map) return;
+            cancelCurrentZoom();
+            map._setScale(map.scale * map.params.zoomStep, map._width / 2, map._height / 2, false, map.params.zoomAnimate);
+            applyNonScalingBorders();
+        };
+    }
+
+    if (ctrlZoomOut) {
+        ctrlZoomOut.onclick = (e) => {
+            e.stopPropagation();
+            if (!map) return;
+            cancelCurrentZoom();
+            map._setScale(map.scale / map.params.zoomStep, map._width / 2, map._height / 2, false, map.params.zoomAnimate);
+            applyNonScalingBorders();
+        };
+    }
+
+    if (ctrlReset) {
+        ctrlReset.onclick = (e) => {
+            e.stopPropagation();
+            cancelCurrentZoom();
+            resetMapView(true);
+            applyNonScalingBorders();
+        };
+    }
+}
+
+// Initialize Application
+function init() {
+    try {
+        map = new jsVectorMap(MAP_CONFIG);
+        applyNonScalingBorders();
+    } catch (e) {
+        console.error("Map initialization failed", e);
+    }
+
+    setupCustomZoomControls();
+
+    // Determine initial mode from URL param (?mode=locate or ?mode=guess)
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramMode = urlParams.get('mode');
+    const initialMode = (paramMode === 'guess') ? 'guess' : 'locate';
+
+    // Navigation and game reset actions
+    const goToMenu = () => window.location.href = '../index.html';
+    restartBtn.onclick = goToMenu;
+    backToMenuBtn.onclick = goToMenu;
+    playAgainBtn.onclick = () => startNewGame();
+
+    I18N.onLanguageChange(updateUIStrings);
+
+    switchMode(initialMode);
+}
+
 window.onload = () => {
     init();
 };

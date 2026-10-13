@@ -43,7 +43,12 @@ const SoundManager = {
 };
 
 // Game State
-const TOTAL_QUESTIONS = 20;
+function getQuestionsCount() {
+    const params = new URLSearchParams(window.location.search);
+    const q = parseInt(params.get('questions'), 10);
+    return [10, 20, 50, 100].includes(q) ? q : 20;
+}
+const TOTAL_QUESTIONS = getQuestionsCount();
 let currentScore = 0;
 let remainingCountries = [];
 let currentQuestion = null;
