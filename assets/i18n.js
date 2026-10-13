@@ -13,8 +13,8 @@
             es: "Banderas"
         },
         flagsDesc: {
-            en: "Identify world flags from every continent. How many can you get right?",
-            es: "Identifica banderas del mundo de cada continente. ¿Cuántas podrás acertar?"
+            en: "See the country name and guess the correct flag. Test your visual memory!",
+            es: "Observa el nombre del país y adivina su bandera. ¿Cuántas podrás acertar?"
         },
         capitalsTitle: {
             en: "Capitals",
@@ -31,6 +31,14 @@
         mapsDesc: {
             en: "Explore the world map and locate countries with precision.",
             es: "Explora el mapa mundial y localiza países con precisión."
+        },
+        countriesTitle: {
+            en: "Countries",
+            es: "Países"
+        },
+        countriesDesc: {
+            en: "Identify world countries from every continent by their flags. How many can you get right?",
+            es: "Identifica países del mundo de cada continente por su bandera. ¿Cuántos podrás acertar?"
         },
         footer: {
             en: "Made while sipping 🧉",
@@ -59,6 +67,10 @@
         headerFlags: {
             en: "FLAGS",
             es: "BANDERAS"
+        },
+        headerCountries: {
+            en: "COUNTRIES",
+            es: "PAÍSES"
         },
         headerCapitals: {
             en: "CAPITALS",

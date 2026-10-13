@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -45,24 +45,26 @@
             <button id="restart-btn" class="primary-btn">Volver al Menú</button>
         </section>
 
+        <!-- Main Game Section -->
         <section id="game-container" class="glass-panel">
             <div class="loading-overlay hidden" id="loading">
                 <div class="spinner"></div>
             </div>
 
-            <div class="flag-stage">
-                <div class="flag-wrapper">
-                    <img id="flag-img" src="" alt="Flag to guess" draggable="false">
-                </div>
+            <!-- Country Prompt Stage -->
+            <div class="country-stage">
                 <div class="continent-hint" id="continent-hint">
                     <!-- Javascript will populate this -->
                 </div>
+                <div class="country-prompt-card">
+                    <h2 class="country-name" id="country-name">---</h2>
+                </div>
             </div>
 
-            <div class="options-grid" id="options-container">
-                <!-- Buttons will be injected here -->
+            <!-- Options Grid: 6 Flag Buttons -->
+            <div class="flags-grid" id="options-container">
+                <!-- Javascript will populate flag option buttons -->
             </div>
-
         </section>
 
         <div class="actions-footer">

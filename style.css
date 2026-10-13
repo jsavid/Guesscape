@@ -100,6 +100,10 @@ p.subtitle {
     background-image: url('assets/flags_bg.jpg');
 }
 
+#card-countries::before {
+    background-image: url('assets/countries_bg.jpg');
+}
+
 #card-capitals::before {
     background-image: url('assets/capitals_bg.jpg');
 }
@@ -121,14 +125,18 @@ p.subtitle {
 }
 
 .game-card:nth-child(1) {
-    animation-delay: 0.2s;
+    animation-delay: 0.15s;
 }
 
 .game-card:nth-child(2) {
-    animation-delay: 0.4s;
+    animation-delay: 0.3s;
 }
 
 .game-card:nth-child(3) {
+    animation-delay: 0.45s;
+}
+
+.game-card:nth-child(4) {
     animation-delay: 0.6s;
 }
 

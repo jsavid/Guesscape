@@ -15,6 +15,7 @@ const itemsToCopy = [
   'style.css',
   'assets',
   'capitals',
+  'countries',
   'flag',
   'map'
 ];

@@ -43,6 +43,7 @@ const SoundManager = {
 };
 
 // Game State
+const TOTAL_QUESTIONS = 20;
 let currentScore = 0;
 let remainingCountries = [];
 let currentQuestion = null;
@@ -58,13 +59,11 @@ const finalScoreVal = document.getElementById('final-score-value');
 const statsBreakdown = document.getElementById('stats-breakdown');
 const finalMessage = document.getElementById('final-message');
 const restartBtn = document.getElementById('restart-btn');
-const flagImg = document.getElementById('flag-img');
-const continentHint = document.getElementById('continent-hint');
-const optionsContainer = document.getElementById('options-container');
 const backToMenuBtn = document.getElementById('back-to-menu-btn');
 const flashOverlay = document.getElementById('flash-overlay');
-
-const TOTAL_QUESTIONS = 20;
+const continentHint = document.getElementById('continent-hint');
+const countryNameEl = document.getElementById('country-name');
+const optionsContainer = document.getElementById('options-container');
 
 function updateUIStrings() {
     const scoreLabel = document.getElementById('score-label');
@@ -83,13 +82,7 @@ function updateUIStrings() {
 
     if (currentQuestion && !isAnswered) {
         continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
-        optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
-            const code = btn.dataset.code;
-            const country = currentQuestion.options.find(c => c.code === code);
-            if (country) {
-                btn.textContent = I18N.tCountry(country.code, country.name);
-            }
-        });
+        countryNameEl.textContent = I18N.tCountry(currentQuestion.correct.code, currentQuestion.correct.name);
     }
 
     if (!gameOverSection.classList.contains('hidden')) {
@@ -99,14 +92,12 @@ function updateUIStrings() {
     }
 }
 
-// Initialize
+// Initialize Game
 function init() {
-    // Shuffle and pick 20
     const shuffled = [...countries].sort(() => 0.5 - Math.random());
     remainingCountries = shuffled.slice(0, TOTAL_QUESTIONS);
     currentScore = 0;
 
-    // Reset Stats
     continentStats = {};
     remainingCountries.forEach(c => {
         if (!continentStats[c.continent]) {
@@ -117,7 +108,6 @@ function init() {
     updateScoreUI();
     updateUIStrings();
 
-    // UI Reset
     gameContainer.classList.remove('hidden');
     gameOverSection.classList.add('hidden');
     backToMenuBtn.classList.remove('hidden');
@@ -186,12 +176,9 @@ function generateQuestion() {
         return;
     }
 
-    // Reset UI
     isAnswered = false;
     optionsContainer.innerHTML = '';
-    flagImg.style.opacity = '0';
 
-    // Pick Random
     const randomIndex = Math.floor(Math.random() * remainingCountries.length);
     const correctCountry = remainingCountries[randomIndex];
 
@@ -199,13 +186,23 @@ function generateQuestion() {
     remainingCountries.splice(randomIndex, 1);
     updateScoreUI();
 
-    // Distractors
+    // Select distractors (prioritize same continent)
     const sameContinent = countries.filter(c =>
         c.continent === correctCountry.continent && c.code !== correctCountry.code
     );
 
     const shuffledDistractors = sameContinent.sort(() => 0.5 - Math.random());
-    const distractors = shuffledDistractors.slice(0, 5);
+    let distractors = shuffledDistractors.slice(0, 5);
+
+    // If same continent has fewer than 5 distractors, fill from remaining pool
+    if (distractors.length < 5) {
+        const otherPool = countries.filter(c =>
+            c.code !== correctCountry.code && !distractors.some(d => d.code === c.code)
+        ).sort(() => 0.5 - Math.random());
+        const needed = 5 - distractors.length;
+        distractors = distractors.concat(otherPool.slice(0, needed));
+    }
+
     const options = [correctCountry, ...distractors].sort(() => 0.5 - Math.random());
 
     currentQuestion = {
@@ -213,21 +210,30 @@ function generateQuestion() {
         options: options
     };
 
-    // Render Flag
-    const img = new Image();
-    img.onload = () => {
-        flagImg.src = img.src;
-        flagImg.style.opacity = '1';
-    };
-    img.src = `https://flagcdn.com/w640/${correctCountry.code.toLowerCase()}.png`;
-
+    // Update Question prompt
     continentHint.textContent = I18N.tContinent(correctCountry.continent);
+    countryNameEl.textContent = I18N.tCountry(correctCountry.code, correctCountry.name);
 
+    // Create flag option buttons
     options.forEach(country => {
         const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        btn.textContent = I18N.tCountry(country.code, country.name);
+        btn.type = 'button';
+        btn.className = 'flag-btn';
         btn.dataset.code = country.code;
+        btn.setAttribute('aria-label', I18N.tCountry(country.code, country.name));
+
+        const inner = document.createElement('div');
+        inner.className = 'flag-btn-inner';
+
+        const img = document.createElement('img');
+        img.className = 'flag-btn-img';
+        img.alt = '';
+        img.draggable = false;
+        img.src = `https://flagcdn.com/w320/${country.code.toLowerCase()}.png`;
+
+        inner.appendChild(img);
+        btn.appendChild(inner);
+
         btn.addEventListener('click', () => handleAnswer(country, btn));
         optionsContainer.appendChild(btn);
     });
@@ -239,7 +245,7 @@ function handleAnswer(selectedCountry, btnElement) {
 
     const correctCode = currentQuestion.correct.code;
     const continent = currentQuestion.correct.continent;
-    const allButtons = optionsContainer.querySelectorAll('.option-btn');
+    const allButtons = optionsContainer.querySelectorAll('.flag-btn');
 
     if (selectedCountry.code === correctCode) {
         currentScore++;
@@ -255,6 +261,7 @@ function handleAnswer(selectedCountry, btnElement) {
         triggerFlash('wrong');
         btnElement.classList.add('wrong');
 
+        // Highlight correct flag
         allButtons.forEach(btn => {
             if (btn.dataset.code === correctCode) {
                 btn.classList.add('correct');
@@ -267,7 +274,8 @@ function handleAnswer(selectedCountry, btnElement) {
 
     setTimeout(() => {
         generateQuestion();
-    }, 1000);
+    }, 1100);
 }
 
+// Start game
 init();
