@@ -108,9 +108,12 @@ p.subtitle {
     background-image: url('assets/capitals_bg.jpg');
 }
 
-#card-map-locate::before,
 #card-maps::before {
     background-image: url('assets/maps_bg.jpg');
+}
+
+#card-map-locate::before {
+    background-image: url('assets/locate_bg.jpg');
 }
 
 .game-card::after {
