@@ -328,30 +328,27 @@ function resetMapView(animate = true) {
     currentZoomAnimId = requestAnimationFrame(step);
 }
 
-// Calculate clamped translation to keep map boundaries properly aligned
+// Calculate clamped translation to keep country centered with comfortable boundary margins
 function getClampedTranslation(targetScale, anchorX, anchorY) {
     const curW = map._width || 800;
     const curH = map._height || 450;
-    const defW = map._defaultWidth || 950;
-    const defH = map._defaultHeight || 550;
+    const defW = map._defaultWidth || 900;
+    const defH = map._defaultHeight || 440.7;
 
+    // Direct mathematical center for target coordinates
     let transX = anchorX + curW / (2 * targetScale);
     let transY = anchorY + curH / (2 * targetScale);
 
-    let maxTransX, minTransX, maxTransY, minTransY;
-    if (defW * targetScale <= curW) {
-        maxTransX = minTransX = (curW - defW * targetScale) / (2 * targetScale);
-    } else {
-        maxTransX = 0;
-        minTransX = (curW - defW * targetScale) / targetScale;
-    }
+    // Generous boundary margins allowing countries near the map edges (like USA, Alaska, Russia, New Zealand)
+    // to be placed dead-center in the screen rather than being clamped against borders
+    const padX = curW / (2 * targetScale);
+    const padY = curH / (2 * targetScale);
 
-    if (defH * targetScale <= curH) {
-        maxTransY = minTransY = (curH - defH * targetScale) / (2 * targetScale);
-    } else {
-        maxTransY = 0;
-        minTransY = (curH - defH * targetScale) / targetScale;
-    }
+    const maxTransX = padX;
+    const minTransX = (curW - defW * targetScale) / targetScale - padX;
+
+    const maxTransY = padY;
+    const minTransY = (curH - defH * targetScale) / targetScale - padY;
 
     if (transX > maxTransX) transX = maxTransX;
     else if (transX < minTransX) transX = minTransX;
@@ -364,13 +361,13 @@ function getClampedTranslation(targetScale, anchorX, anchorY) {
 
 // Extract mainland center and size for optimal country camera framing
 function getCountryFocusGeometry(code) {
+    if (!code) return null;
     const codeUpper = normalizeMapCode(code);
-    const region = map?.regions?.[codeUpper];
-    if (!region?.element?.shape) return null;
 
     // First try extracting mainland (largest subpath) from path definition
-    const rawPath = window.jsVectorMapHiresData?.paths?.[codeUpper]?.path 
-                 || window.jsVectorMap?.maps?.world?.paths?.[codeUpper]?.path;
+    const mapPaths = window.jsVectorMapHiresData?.paths 
+                  || window.jsVectorMap?.maps?.world?.paths;
+    const rawPath = mapPaths?.[codeUpper]?.path;
 
     if (rawPath) {
         const subpaths = rawPath.split(/(?=[Mm])/);
@@ -412,8 +409,9 @@ function getCountryFocusGeometry(code) {
     }
 
     // Fallback: standard getBBox from shape
+    const region = map?.regions?.[codeUpper];
     try {
-        const bbox = region.element.shape.getBBox();
+        const bbox = region?.element?.shape?.getBBox();
         if (bbox && bbox.width && bbox.height) {
             return {
                 anchorX: -(bbox.x + bbox.width / 2),
@@ -440,9 +438,9 @@ function smoothFocusCountry(code, duration = 900, zoomMultiplier = 1.0) {
     const maxDim = Math.max(geom.width, geom.height);
 
     // Calculate optimal scale so that country fills prominently
-    // zoomMultiplier allows zooming in deeper ("haciendo más zoom")
+    // For large countries like USA, Russia, Canada, Brazil, allow comfortable framing
     const idealScale = ((viewportMinDim * 0.46) / Math.max(maxDim, 16)) * zoomMultiplier;
-    const minScale = baseScale * 2.4 * zoomMultiplier;
+    const minScale = baseScale * 1.5 * zoomMultiplier;
     const maxScale = Math.min(baseScale * 8.5 * zoomMultiplier, (map.params?.zoomMax || 50));
     const targetScale = Math.min(Math.max(idealScale, minScale), maxScale);
 
@@ -978,6 +976,38 @@ function setupCustomZoomControls() {
 function init() {
     try {
         map = new jsVectorMap(MAP_CONFIG);
+
+        // Patch _applyTransform to allow centering and panning near map boundaries
+        if (map && typeof map._applyTransform === 'function') {
+            map._applyTransform = function() {
+                const curW = this._width || 800;
+                const curH = this._height || 450;
+                const defW = this._defaultWidth || 900;
+                const defH = this._defaultHeight || 440.7;
+
+                const padX = curW / (2 * this.scale);
+                const padY = curH / (2 * this.scale);
+
+                const maxTransX = padX;
+                const minTransX = (curW - defW * this.scale) / this.scale - padX;
+
+                const maxTransY = padY;
+                const minTransY = (curH - defH * this.scale) / this.scale - padY;
+
+                if (this.transX > maxTransX) this.transX = maxTransX;
+                else if (this.transX < minTransX) this.transX = minTransX;
+
+                if (this.transY > maxTransY) this.transY = maxTransY;
+                else if (this.transY < minTransY) this.transY = minTransY;
+
+                this.canvas.applyTransformParams(this.scale, this.transX, this.transY);
+                if (this._markers) this._repositionMarkers();
+                if (this._lines) this._repositionLines();
+                if (typeof this._repositionLabels === 'function') this._repositionLabels();
+                applyNonScalingBorders();
+            };
+        }
+
         applyNonScalingBorders();
     } catch (e) {
         console.error("Map initialization failed", e);
