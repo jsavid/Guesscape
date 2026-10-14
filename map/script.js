@@ -179,13 +179,11 @@ const flashOverlay = document.getElementById('flash-overlay');
 // Locate Mode Specific Elements
 const locateTargetCard = document.getElementById('locate-target-card');
 const targetFlagImg = document.getElementById('target-flag-img');
-const targetContinentBadge = document.getElementById('target-continent');
 const targetCountryNameEl = document.getElementById('target-country-name');
 const targetInstructionEl = document.getElementById('target-instruction');
 const locateFeedback = document.getElementById('locate-feedback');
 
 // Guess Mode Elements
-const continentHint = document.getElementById('continent-hint');
 const optionsContainer = document.getElementById('options-container');
 
 // Floating Map Zoom Buttons
@@ -232,10 +230,8 @@ function updateUIStrings() {
 
     if (currentQuestion && !isAnswered) {
         if (activeMode === 'locate') {
-            targetContinentBadge.textContent = I18N.tContinent(currentQuestion.correct.continent);
             targetCountryNameEl.textContent = I18N.tCountry(currentQuestion.correct.code, currentQuestion.correct.name);
         } else {
-            continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
             optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
                 const cCode = btn.dataset.code;
                 const country = currentQuestion.options.find(c => c.code === cCode);
@@ -701,13 +697,11 @@ function switchMode(newMode) {
     if (activeMode === 'locate') {
         gameApp.classList.add('locate-mode');
         locateTargetCard.classList.remove('hidden');
-        continentHint.classList.add('hidden');
         optionsContainer.classList.add('hidden');
     } else {
         gameApp.classList.remove('locate-mode');
         locateTargetCard.classList.add('hidden');
         hideFeedback();
-        continentHint.classList.remove('hidden');
         optionsContainer.classList.remove('hidden');
     }
 
@@ -769,7 +763,6 @@ function generateQuestion() {
             correct: correctCountry
         };
 
-        targetContinentBadge.textContent = I18N.tContinent(correctCountry.continent);
         targetCountryNameEl.textContent = I18N.tCountry(correctCountry.code, correctCountry.name);
         targetFlagImg.src = `https://flagcdn.com/w160/${flagCode}.png`;
         targetFlagImg.alt = I18N.tCountry(correctCountry.code, correctCountry.name);
@@ -811,7 +804,6 @@ function generateQuestion() {
             }
         }
 
-        continentHint.textContent = I18N.tContinent(correctCountry.continent);
         optionsContainer.innerHTML = '';
 
         options.forEach(country => {

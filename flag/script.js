@@ -66,7 +66,6 @@ const finalMessage = document.getElementById('final-message');
 const restartBtn = document.getElementById('restart-btn');
 const backToMenuBtn = document.getElementById('back-to-menu-btn');
 const flashOverlay = document.getElementById('flash-overlay');
-const continentHint = document.getElementById('continent-hint');
 const countryNameEl = document.getElementById('country-name');
 const optionsContainer = document.getElementById('options-container');
 
@@ -86,7 +85,6 @@ function updateUIStrings() {
     if (backToMenuBtn) backToMenuBtn.textContent = I18N.t('backToMenu');
 
     if (currentQuestion && !isAnswered) {
-        continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
         countryNameEl.textContent = I18N.tCountry(currentQuestion.correct.code, currentQuestion.correct.name);
     }
 
@@ -214,7 +212,6 @@ function generateQuestion() {
     };
 
     // Update Question prompt
-    continentHint.textContent = I18N.tContinent(correctCountry.continent);
     countryNameEl.textContent = I18N.tCountry(correctCountry.code, correctCountry.name);
 
     // Create flag option buttons

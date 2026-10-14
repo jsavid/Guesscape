@@ -59,7 +59,6 @@ const statsBreakdown = document.getElementById('stats-breakdown');
 const finalMessage = document.getElementById('final-message');
 const restartBtn = document.getElementById('restart-btn');
 const flagImg = document.getElementById('flag-img');
-const continentHint = document.getElementById('continent-hint');
 const optionsContainer = document.getElementById('options-container');
 const backToMenuBtn = document.getElementById('back-to-menu-btn');
 const flashOverlay = document.getElementById('flash-overlay');
@@ -87,7 +86,6 @@ function updateUIStrings() {
     if (backToMenuBtn) backToMenuBtn.textContent = I18N.t('backToMenu');
 
     if (currentQuestion && !isAnswered) {
-        continentHint.textContent = I18N.tContinent(currentQuestion.correct.continent);
         optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
             const code = btn.dataset.code;
             const country = currentQuestion.options.find(c => c.code === code);
@@ -223,8 +221,6 @@ function generateQuestion() {
         flagImg.style.opacity = '1';
     };
     img.src = `https://flagcdn.com/w640/${correctCountry.code.toLowerCase()}.png`;
-
-    continentHint.textContent = I18N.tContinent(correctCountry.continent);
 
     options.forEach(country => {
         const btn = document.createElement('button');
