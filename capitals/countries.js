@@ -13,6 +13,7 @@ window.gameData.countries = [
     { name: "Suriname", code: "sr", continent: "South America", capital: "Paramaribo", cities: ["Lelydorp", "Nieuw Nickerie", "Moengo", "Wageningen", "Albina", "Paramaribo"] },
     { name: "Uruguay", code: "uy", continent: "South America", capital: "Montevideo", cities: ["Salto", "Ciudad de la Costa", "Paysandú", "Las Piedras", "Rivera", "Montevideo"] },
     { name: "Venezuela", code: "ve", continent: "South America", capital: "Caracas", cities: ["Maracaibo", "Valencia", "Barquisimeto", "Maracay", "Ciudad Guayana", "Caracas"] },
+    { name: "French Guiana", code: "gf", continent: "South America", capital: "Cayenne", cities: ["Saint-Laurent-du-Maroni", "Kourou", "Matoury", "Remire-Montjoly", "Mana", "Cayenne"] },
 
     // North America (includes Central and Caribbean)
     { name: "United States", code: "us", continent: "North America", capital: "Washington, D.C.", cities: ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Washington, D.C."] },
@@ -207,6 +208,24 @@ window.gameData.countries = [
     { name: "Solomon Islands", code: "sb", continent: "Oceania", capital: "Honiara", cities: ["Gizo", "Auki", "Noro", "Buala", "Tulagi", "Honiara"] },
     { name: "Tonga", code: "to", continent: "Oceania", capital: "Nukuʻalofa", cities: ["Neiafu", "Haveluloto", "Vaini", "Tofoa-Koloa", "Pangai", "Nukuʻalofa"] },
     { name: "Tuvalu", code: "tv", continent: "Oceania", capital: "Funafuti", cities: ["Alapi", "Senala", "Vaiaku", "Fakaifou", "Teone", "Funafuti"] },
-    { name: "Vanuatu", code: "vu", continent: "Oceania", capital: "Port Vila", cities: ["Luganville", "Norsup", "Isangel", "Sola", "Lakatoro", "Port Vila"] }
+    { name: "Vanuatu", code: "vu", continent: "Oceania", capital: "Port Vila", cities: ["Luganville", "Norsup", "Isangel", "Sola", "Lakatoro", "Port Vila"] },
+
+    // Popular Territories & Autonomous Regions
+    { name: "Puerto Rico", code: "pr", continent: "North America", capital: "San Juan", cities: ["Ponce", "Bayamón", "Caguas", "Carolina", "Arecibo", "San Juan"] },
+    { name: "Greenland", code: "gl", continent: "North America", capital: "Nuuk", cities: ["Sisimiut", "Ilulissat", "Qaqortoq", "Aasiaat", "Maniitsoq", "Nuuk"] },
+    { name: "Hong Kong", code: "hk", continent: "Asia", capital: "Victoria", cities: ["Kowloon", "Tsuen Wan", "Sha Tin", "Tuen Mun", "Tai Po", "Victoria"] },
+    { name: "Faroe Islands", code: "fo", continent: "Europe", capital: "Tórshavn", cities: ["Klaksvík", "Hoyvík", "Argir", "Fuglafjørður", "Vágur", "Tórshavn"] },
+    { name: "Macao", code: "mo", continent: "Asia", capital: "Macao", cities: ["Taipa", "Coloane", "Cotai", "Freguesia da Sé", "Our Lady of Fatima", "Macao"] },
+    { name: "Bermuda", code: "bm", continent: "North America", capital: "Hamilton", cities: ["St. George's", "Somerset", "Flatts Village", "Tucker's Town", "Dockyard", "Hamilton"] },
+    { name: "Gibraltar", code: "gi", continent: "Europe", capital: "Gibraltar", cities: ["Catalan Bay", "Sandy Bay", "Rosia Bay", "Ocean Village", "Moorish Castle", "Gibraltar"] },
+    { name: "Curaçao", code: "cw", continent: "North America", capital: "Willemstad", cities: ["Sint Michiel", "Barber", "Tera Kora", "Grote Berg", "Dorp Soto", "Willemstad"] },
+    { name: "Aruba", code: "aw", continent: "North America", capital: "Oranjestad", cities: ["San Nicolaas", "Noord", "Santa Cruz", "Paradera", "Savaneta", "Oranjestad"] },
+    { name: "Guam", code: "gu", continent: "Oceania", capital: "Hagåtña", cities: ["Dededo", "Yigo", "Tamuning", "Mangilao", "Barrigada", "Hagåtña"] },
+    { name: "French Polynesia", code: "pf", continent: "Oceania", capital: "Papeete", cities: ["Faaa", "Punaauia", "Pirae", "Mahina", "Paea", "Papeete"] },
+    { name: "New Caledonia", code: "nc", continent: "Oceania", capital: "Nouméa", cities: ["Mont-Dore", "Dumbéa", "Païta", "Bourail", "Koné", "Nouméa"] },
+    { name: "Scotland", code: "gb-sct", continent: "Europe", capital: "Edinburgh", cities: ["Glasgow", "Aberdeen", "Dundee", "Inverness", "Stirling", "Edinburgh"] },
+    { name: "Wales", code: "gb-wls", continent: "Europe", capital: "Cardiff", cities: ["Swansea", "Newport", "Wrexham", "Bangor", "St Asaph", "Cardiff"] },
+    { name: "England", code: "gb-eng", continent: "Europe", capital: "London", cities: ["Manchester", "Birmingham", "Liverpool", "Leeds", "Bristol", "London"] },
+    { name: "Northern Ireland", code: "gb-nir", continent: "Europe", capital: "Belfast", cities: ["Derry", "Lisburn", "Newry", "Armagh", "Bangor", "Belfast"] }
 ];
 

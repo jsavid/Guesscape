@@ -994,10 +994,81 @@
         "_1": {
                 "en": "Kosovo",
                 "es": "Kosovo"
+        },
+        "pr": {
+                "en": "Puerto Rico",
+                "es": "Puerto Rico"
+        },
+        "gl": {
+                "en": "Greenland",
+                "es": "Groenlandia"
+        },
+        "hk": {
+                "en": "Hong Kong",
+                "es": "Hong Kong"
+        },
+        "fo": {
+                "en": "Faroe Islands",
+                "es": "Islas Feroe"
+        },
+        "mo": {
+                "en": "Macao",
+                "es": "Macao"
+        },
+        "bm": {
+                "en": "Bermuda",
+                "es": "Bermudas"
+        },
+        "gi": {
+                "en": "Gibraltar",
+                "es": "Gibraltar"
+        },
+        "cw": {
+                "en": "Curaçao",
+                "es": "Curazao"
+        },
+        "aw": {
+                "en": "Aruba",
+                "es": "Aruba"
+        },
+        "gu": {
+                "en": "Guam",
+                "es": "Guam"
+        },
+        "pf": {
+                "en": "French Polynesia",
+                "es": "Polinesia Francesa"
+        },
+        "nc": {
+                "en": "New Caledonia",
+                "es": "Nueva Caledonia"
+        },
+        "gb-sct": {
+                "en": "Scotland",
+                "es": "Escocia"
+        },
+        "gb-wls": {
+                "en": "Wales",
+                "es": "Gales"
+        },
+        "gb-eng": {
+                "en": "England",
+                "es": "Inglaterra"
+        },
+        "gb-nir": {
+                "en": "Northern Ireland",
+                "es": "Irlanda del Norte"
+        },
+        "gf": {
+                "en": "French Guiana",
+                "es": "Guayana Francesa"
         }
 };
 
     const CITIES = {
+        "Cayenne": "Cayena",
+        "Edinburgh": "Edimburgo",
+        "Nouméa": "Numea",
         "London": "Londres",
         "Rome": "Roma",
         "Paris": "París",

@@ -13,6 +13,7 @@ window.gameData.countries = [
     { name: "Suriname", code: "sr", continent: "South America" },
     { name: "Uruguay", code: "uy", continent: "South America" },
     { name: "Venezuela", code: "ve", continent: "South America" },
+    { name: "French Guiana", code: "gf", continent: "South America" },
 
     // North America (includes Central and Caribbean)
     { name: "United States", code: "us", continent: "North America" },
@@ -207,5 +208,23 @@ window.gameData.countries = [
     { name: "Solomon Islands", code: "sb", continent: "Oceania" },
     { name: "Tonga", code: "to", continent: "Oceania" },
     { name: "Tuvalu", code: "tv", continent: "Oceania" },
-    { name: "Vanuatu", code: "vu", continent: "Oceania" }
+    { name: "Vanuatu", code: "vu", continent: "Oceania" },
+
+    // Popular Territories & Autonomous Regions
+    { name: "Puerto Rico", code: "pr", continent: "North America" },
+    { name: "Greenland", code: "gl", continent: "North America" },
+    { name: "Hong Kong", code: "hk", continent: "Asia" },
+    { name: "Faroe Islands", code: "fo", continent: "Europe" },
+    { name: "Macao", code: "mo", continent: "Asia" },
+    { name: "Bermuda", code: "bm", continent: "North America" },
+    { name: "Gibraltar", code: "gi", continent: "Europe" },
+    { name: "Curaçao", code: "cw", continent: "North America" },
+    { name: "Aruba", code: "aw", continent: "North America" },
+    { name: "Guam", code: "gu", continent: "Oceania" },
+    { name: "French Polynesia", code: "pf", continent: "Oceania" },
+    { name: "New Caledonia", code: "nc", continent: "Oceania" },
+    { name: "Scotland", code: "gb-sct", continent: "Europe" },
+    { name: "Wales", code: "gb-wls", continent: "Europe" },
+    { name: "England", code: "gb-eng", continent: "Europe" },
+    { name: "Northern Ireland", code: "gb-nir", continent: "Europe" }
 ];

@@ -26,8 +26,8 @@ async function build() {
     prune: true,
     ignore: ignorePatterns,
     appCopyright: 'Copyright © 2026 Guesscape',
-    appVersion: '1.1.0',
-    buildVersion: '1.1.0',
+    appVersion: '1.2.0',
+    buildVersion: '1.2.0',
     win32metadata: {
       CompanyName: 'Guesscape',
       FileDescription: 'Guesscape - Geography Quiz Game',

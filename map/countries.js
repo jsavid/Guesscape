@@ -13,6 +13,7 @@ window.gameData.countries = [
     { name: "Suriname", code: "sr", continent: "South America" },
     { name: "Uruguay", code: "uy", continent: "South America" },
     { name: "Venezuela", code: "ve", continent: "South America" },
+    { name: "French Guiana", code: "gf", continent: "South America" },
 
     // North America (includes Central and Caribbean)
     { name: "United States", code: "us", continent: "North America" },
