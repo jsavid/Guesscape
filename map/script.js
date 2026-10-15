@@ -83,6 +83,45 @@ let isAnswered = false;
 let continentStats = {};
 let map = null;
 
+// Navigation & Drag vs Click State
+let isMapDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragStartTime = 0;
+let dragButton = 0;
+let lastDragEndTime = 0;
+const DRAG_THRESHOLD_PX = 6;
+
+function isCleanPrimaryClick(event) {
+    // 1. Only left button (button 0) or touches (undefined or 0)
+    if (event && typeof event.button === 'number' && event.button !== 0) {
+        return false;
+    }
+    if (dragButton !== 0 && dragButton !== undefined) {
+        return false;
+    }
+
+    // 2. Reject if actively dragging or recently stopped dragging (< 350ms)
+    if (isMapDragging || (Date.now() - lastDragEndTime < 350)) {
+        return false;
+    }
+
+    // 3. Reject if pointer distance moved exceeds threshold
+    if (event && typeof event.clientX === 'number' && (dragStartX !== 0 || dragStartY !== 0)) {
+        const dist = Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY);
+        if (dist > DRAG_THRESHOLD_PX) {
+            return false;
+        }
+    }
+
+    // 4. Reject long-press holds without quick release (> 850ms)
+    if (dragStartTime > 0 && (Date.now() - dragStartTime > 850)) {
+        return false;
+    }
+
+    return true;
+}
+
 // Map configuration
 const MAP_CONFIG = {
     selector: '#map-container',
@@ -119,6 +158,9 @@ const MAP_CONFIG = {
     },
     onRegionClick(event, code) {
         if (activeMode === 'locate') {
+            if (!isCleanPrimaryClick(event)) {
+                return;
+            }
             handleLocateAnswer(code);
         }
     }
@@ -964,6 +1006,72 @@ function setupCustomZoomControls() {
     }
 }
 
+function setupDragVsClickPrevention() {
+    const mapEl = document.getElementById('map-container');
+    if (!mapEl) return;
+
+    // Prevent default context menu so right-click panning works without opening browser context menu
+    mapEl.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    const handlePointerDown = (e) => {
+        isMapDragging = false;
+        dragStartX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        dragStartY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        dragStartTime = Date.now();
+        dragButton = typeof e.button === 'number' ? e.button : 0;
+    };
+
+    const handlePointerMove = (e) => {
+        if (dragStartTime === 0) return;
+        const curX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const curY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        const dist = Math.hypot(curX - dragStartX, curY - dragStartY);
+        if (dist > DRAG_THRESHOLD_PX) {
+            isMapDragging = true;
+            lastDragEndTime = Date.now();
+        }
+    };
+
+    const handlePointerUp = () => {
+        if (isMapDragging) {
+            lastDragEndTime = Date.now();
+            setTimeout(() => {
+                isMapDragging = false;
+            }, 300);
+        }
+        dragStartTime = 0;
+    };
+
+    if (window.PointerEvent) {
+        mapEl.addEventListener('pointerdown', handlePointerDown, { passive: true, capture: true });
+        window.addEventListener('pointermove', handlePointerMove, { passive: true, capture: true });
+        window.addEventListener('pointerup', handlePointerUp, { passive: true, capture: true });
+        window.addEventListener('pointercancel', handlePointerUp, { passive: true, capture: true });
+    } else {
+        mapEl.addEventListener('mousedown', handlePointerDown, { capture: true });
+        window.addEventListener('mousemove', handlePointerMove, { capture: true });
+        window.addEventListener('mouseup', handlePointerUp, { capture: true });
+        mapEl.addEventListener('touchstart', handlePointerDown, { passive: true, capture: true });
+        window.addEventListener('touchmove', handlePointerMove, { passive: true, capture: true });
+        window.addEventListener('touchend', handlePointerUp, { passive: true, capture: true });
+    }
+
+    // Intercept clicks in capture phase on mapEl to prevent jsVectorMap delegate from receiving dragged clicks or non-primary clicks
+    mapEl.addEventListener('click', (e) => {
+        if (e.target.closest && e.target.closest('.map-floating-controls')) {
+            return;
+        }
+
+        if (!isCleanPrimaryClick(e)) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            e.preventDefault();
+        }
+    }, true);
+}
+
 // Initialize Application
 function init() {
     try {
@@ -1006,6 +1114,7 @@ function init() {
     }
 
     setupCustomZoomControls();
+    setupDragVsClickPrevention();
 
     // Determine initial mode from URL param (?mode=locate or ?mode=guess)
     const urlParams = new URLSearchParams(window.location.search);
